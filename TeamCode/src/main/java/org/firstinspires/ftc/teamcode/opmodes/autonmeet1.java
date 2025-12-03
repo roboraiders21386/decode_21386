@@ -1,4 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes; // make sure this aligns with class location
+import static com.qualcomm.robotcore.util.ElapsedTime.Resolution.SECONDS;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -6,23 +8,33 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import  com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 
 @Autonomous(name = "AUTO FOR MEET 1", group = "Autonomous")
-public class autonmeet1 extends OpMode {
+public class autonmeet1 extends LinearOpMode {
 
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
 
     private int pathState;
 
-    private final Pose startPose = new Pose(21, 130, Math.toRadians(315)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(53, 106, Math.toRadians(315)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scanPose = new Pose(72,120, Math.toRadians(270)); // scanning Pose
-    private final Pose prepToPickup = new Pose(41, 84, Math.toRadians(180)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private DcMotor intake;
+    private DcMotor shooter;
+    private CRServo lTransfer;
+    private CRServo rTransfer;
+
+    private final Pose startPose = new Pose(21, 130, Math.toRadians(0)); // Start Pose of our robot.
+    private final Pose scorePose = new Pose(72, 72, Math.toRadians(0)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scanPose = new Pose(72, 120, Math.toRadians(45)); // scanning Pose
+    private final Pose prepToPickup = new Pose(41
+            , 84, Math.toRadians(180)); // Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose pickup1Pose = new Pose(11, 84, Math.toRadians(180)); // Middle (Second Set) of Artifacts from the Spike Mark.
     private final Pose pickup3Pose = new Pose(49, 135, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
@@ -68,6 +80,7 @@ public class autonmeet1 extends OpMode {
             case 0:
                 follower.followPath(scorePreload);
                 setPathState(1);
+                safeWaitSeconds(5);
                 break;
             case 1:
 
@@ -76,78 +89,104 @@ public class autonmeet1 extends OpMode {
             - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
             - Robot Position: "if(follower.getPose().getX() > 36) {}"
             */
+                safeWaitSeconds(10);
 
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()) {
+                if (!follower.isBusy()) {
                     /* Score Preload */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(scanCode,true);
+                    follower.followPath(scanCode, true);
                     setPathState(2);
                 }
                 break;
             case 2:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
-                if(!follower.isBusy()) {
+                if (!follower.isBusy()) {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(gotoGrabPickup1,true);
+                    follower.followPath(gotoGrabPickup1, true);
+                    safeWaitSeconds(5);
                     setPathState(3);
                 }
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()) {
+                if (!follower.isBusy()) {
                     /* Score Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(grabPickup1,true);
+                    follower.followPath(grabPickup1, true);
+                    safeWaitSeconds(5);
                     setPathState(4);
                 }
                 break;
             case 4:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
-                if(!follower.isBusy()) {
+                if (!follower.isBusy()) {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scorePickup1,true);
+                    follower.followPath(scorePickup1, true);
+                    safeWaitSeconds(5);
                     setPathState(-1);
                 }
                 break;
         }
     }
 
-    /** These change the states of the paths and actions. It will also reset the timers of the individual switches **/
+    /**
+     * These change the states of the paths and actions. It will also reset the timers of the individual switches
+     **/
     public void setPathState(int pState) {
         pathState = pState;
         pathTimer.resetTimer();
     }
 
     @Override
-    public void init() {
+    public void runOpMode() throws InterruptedException {
+            shooter = hardwareMap.get(DcMotor.class, "Shooter");
+            intake = hardwareMap.get(DcMotor.class, "Intake");
+            lTransfer = hardwareMap.get(CRServo.class, "Left Transfer");
+            rTransfer = hardwareMap.get(CRServo.class, "Right Transfer");
+
+        //  Initialize follower & paths
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(startPose);
+        buildPaths();
+
+        //  Initialize timers
         pathTimer = new Timer();
+        actionTimer = new Timer();
         opmodeTimer = new Timer();
         opmodeTimer.resetTimer();
-        follower = Constants.createFollower(hardwareMap);
-        buildPaths();
-        follower.setStartingPose(startPose);
+
+            waitForStart();
+
+            if(opModeIsActive() && !isStopRequested()){
+                autonomousPathUpdate();
+                follower.update(); // keep updating follower in loop
+                telemetry.addData("Path State", pathState);
+                telemetry.addData("x", follower.getPose().getX());
+                telemetry.addData("y", follower.getPose().getY());
+                telemetry.addData("heading", follower.getPose().getHeading());
+                telemetry.update();
+            }
+
     }
 
-    //main loop of the code that will update repeatedly after clicking "Play"
-    @Override
-    public void loop() {
-        // These loop the movements of the robot, these must be called continuously in order to work
-        follower.update();
-        autonomousPathUpdate();
-        // Feedback to Driver Hub for debugging
-        telemetry.addData("path state", pathState);
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.update();
+
+    //method to wait safely with stop button working if needed. Use this instead of sleep
+    public void safeWaitSeconds(double time) {
+        ElapsedTime timer = new ElapsedTime(SECONDS);
+        timer.reset();
+        while (!isStopRequested() && timer.seconds() < time) {
+            follower.update(); // keep follower running during wait
+        }
     }
+
+
 }
 
 

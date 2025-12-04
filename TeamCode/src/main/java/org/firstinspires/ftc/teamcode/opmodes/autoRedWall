@@ -1,0 +1,185 @@
+package org.firstinspires.ftc.teamcode.opmodes;
+
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+@Autonomous(name = "Red Wall Auto", group = "Autonomous")
+public class autoRedWall extends OpMode {
+
+    private Follower follower;
+    private Timer pathTimer, opmodeTimer;
+    private int pathState;
+
+    // Red Wall Starting Position and Poses
+    private final Pose startPose = new Pose(96.000, 8.000, Math.toRadians(90));
+    private final Pose scorePose = new Pose(91.000, 106.205, Math.toRadians(225));
+    private final Pose scanPose = new Pose(73.500, 119.000, Math.toRadians(90));
+    private final Pose prepToPickup = new Pose(103.250, 84.250, Math.toRadians(0));
+    private final Pose pickup1Pose = new Pose(127.000, 84.000, Math.toRadians(0));
+    private final Pose scorePickup1Pose = new Pose(88.200, 106.200, Math.toRadians(225));
+    private final Pose parkPose = new Pose(103.200, 60.200, Math.toRadians(360));
+
+    private PathChain path1, path2, path3, path4, path5, path6;
+
+    public void buildPaths() {
+        // Path 1: Start to Score Preload
+        path1 = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, scorePose))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(225))
+                .build();
+
+        // Path 2: Score to Scan Position
+        path2 = follower.pathBuilder()
+                .addPath(new BezierLine(scorePose, scanPose))
+                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(90))
+                .build();
+
+        // Path 3: Scan to Prep for Pickup
+        path3 = follower.pathBuilder()
+                .addPath(new BezierLine(scanPose, prepToPickup))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(0))
+                .build();
+
+        // Path 4: Prep to Pickup Sample
+        path4 = follower.pathBuilder()
+                .addPath(new BezierLine(prepToPickup, pickup1Pose))
+                .setTangentHeadingInterpolation()
+                .build();
+
+        // Path 5: Pickup to Score Sample
+        path5 = follower.pathBuilder()
+                .addPath(new BezierLine(pickup1Pose, scorePickup1Pose))
+                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(225))
+                .build();
+
+        // Path 6: Score to Park
+        path6 = follower.pathBuilder()
+                .addPath(new BezierLine(scorePickup1Pose, parkPose))
+                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(360))
+                .build();
+    }
+
+    public void autonomousPathUpdate() {
+        switch (pathState) {
+            case 0:
+                // Start: Move to scoring position
+                follower.followPath(path1, true);
+                setPathState(1);
+                break;
+
+            case 1:
+                if (!follower.isBusy()) {
+                    // TODO: Score preloaded specimen on high chamber
+                    follower.followPath(path2, true);
+                    setPathState(2);
+                }
+                break;
+
+            case 2:
+                if (!follower.isBusy()) {
+                    // TODO: Scan for sample colors using vision
+                    follower.followPath(path3, true);
+                    setPathState(3);
+                }
+                break;
+
+            case 3:
+                if (!follower.isBusy()) {
+                    // TODO: Prepare intake/arm for pickup
+                    follower.followPath(path4, true);
+                    setPathState(4);
+                }
+                break;
+
+            case 4:
+                if (!follower.isBusy()) {
+                    // TODO: Grab the sample
+                    follower.followPath(path5, true);
+                    setPathState(5);
+                }
+                break;
+
+            case 5:
+                if (!follower.isBusy()) {
+                    // TODO: Score sample in high basket
+                    follower.followPath(path6, true);
+                    setPathState(6);
+                }
+                break;
+
+            case 6:
+                if (!follower.isBusy()) {
+                    // Autonomous complete - parked
+                    setPathState(-1);
+                }
+                break;
+
+            default:
+                // Autonomous complete
+                break;
+        }
+    }
+
+    public void setPathState(int pState) {
+        pathState = pState;
+        pathTimer.resetTimer();
+    }
+
+    @Override
+    public void init() {
+        pathTimer = new Timer();
+        opmodeTimer = new Timer();
+        opmodeTimer.resetTimer();
+
+        follower = Constants.createFollower(hardwareMap);
+        buildPaths();
+        follower.setStartingPose(startPose);
+        pathState = 0;
+
+        // TODO: Initialize robot hardware here
+
+        telemetry.addData("Status", "Red Wall Auto Initialized");
+        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: %.0f°",
+                startPose.getX(), startPose.getY(), Math.toDegrees(startPose.getHeading()));
+        telemetry.update();
+    }
+
+    @Override
+    public void start() {
+        opmodeTimer.resetTimer();
+        pathTimer.resetTimer();
+        pathState = 0;
+    }
+
+    @Override
+    public void loop() {
+        follower.update();
+        autonomousPathUpdate();
+
+        if (opmodeTimer.getElapsedTimeSeconds() > 30) {
+            requestOpModeStop();
+        }
+
+        telemetry.addData("Path State", pathState);
+        telemetry.addData("Follower Busy", follower.isBusy());
+        telemetry.addData("Position", "X: %.1f, Y: %.1f",
+                follower.getPose().getX(), follower.getPose().getY());
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.update();
+    }
+
+    @Override
+    public void stop() {
+        telemetry.addData("Status", "Red Wall Auto Complete");
+        telemetry.addData("Final Time", "%.2f seconds", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.update();
+    }
+}

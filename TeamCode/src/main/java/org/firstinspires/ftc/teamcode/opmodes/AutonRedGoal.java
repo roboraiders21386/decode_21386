@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "Red Goal Auto", group = "Autonomous")
-public class autoRedGoal extends OpMode {
+public class AutonRedGoal extends OpMode {
 
     private Follower follower;
     private Timer pathTimer, opmodeTimer;

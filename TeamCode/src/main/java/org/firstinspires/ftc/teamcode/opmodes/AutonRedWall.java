@@ -10,21 +10,21 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Blue Wall Auto", group = "Autonomous")
-public class autoBlueWall extends OpMode {
+@Autonomous(name = "Red Wall Auto", group = "Autonomous")
+public class AutonRedWall extends OpMode {
 
     private Follower follower;
     private Timer pathTimer, opmodeTimer;
     private int pathState;
 
-    // Blue Wall Starting Position and Poses
-    private final Pose startPose = new Pose(48.000, 8.000, Math.toRadians(270));
-    private final Pose scorePose = new Pose(53.209, 106.205, Math.toRadians(315));
-    private final Pose scanPose = new Pose(71.500, 119.000, Math.toRadians(270));
-    private final Pose prepToPickup = new Pose(40.750, 84.250, Math.toRadians(180));
-    private final Pose pickup1Pose = new Pose(10.000, 84.000, Math.toRadians(180));
-    private final Pose scorePickup1Pose = new Pose(53.200, 106.200, Math.toRadians(315));
-    private final Pose parkPose = new Pose(40.500, 60.200, Math.toRadians(180));
+    // Red Wall Starting Position and Poses
+    private final Pose startPose = new Pose(96.000, 8.000, Math.toRadians(90));
+    private final Pose scorePose = new Pose(91.000, 106.205, Math.toRadians(225));
+    private final Pose scanPose = new Pose(73.500, 119.000, Math.toRadians(90));
+    private final Pose prepToPickup = new Pose(103.250, 84.250, Math.toRadians(0));
+    private final Pose pickup1Pose = new Pose(127.000, 84.000, Math.toRadians(0));
+    private final Pose scorePickup1Pose = new Pose(88.200, 106.200, Math.toRadians(225));
+    private final Pose parkPose = new Pose(103.200, 60.200, Math.toRadians(360));
 
     private PathChain path1, path2, path3, path4, path5, path6;
 
@@ -32,19 +32,19 @@ public class autoBlueWall extends OpMode {
         // Path 1: Start to Score Preload
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(315))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(225))
                 .build();
 
         // Path 2: Score to Scan Position
         path2 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, scanPose))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(90))
                 .build();
 
         // Path 3: Scan to Prep for Pickup
         path3 = follower.pathBuilder()
                 .addPath(new BezierLine(scanPose, prepToPickup))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(0))
                 .build();
 
         // Path 4: Prep to Pickup Sample
@@ -56,13 +56,13 @@ public class autoBlueWall extends OpMode {
         // Path 5: Pickup to Score Sample
         path5 = follower.pathBuilder()
                 .addPath(new BezierLine(pickup1Pose, scorePickup1Pose))
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
+                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(225))
                 .build();
 
         // Path 6: Score to Park
         path6 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePickup1Pose, parkPose))
-                .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(360))
                 .build();
     }
 
@@ -145,7 +145,7 @@ public class autoBlueWall extends OpMode {
 
         // TODO: Initialize robot hardware here
 
-        telemetry.addData("Status", "Blue Wall Auto Initialized");
+        telemetry.addData("Status", "Red Wall Auto Initialized");
         telemetry.addData("Start", "X: %.1f, Y: %.1f, H: %.0f°",
                 startPose.getX(), startPose.getY(), Math.toDegrees(startPose.getHeading()));
         telemetry.update();
@@ -178,7 +178,7 @@ public class autoBlueWall extends OpMode {
 
     @Override
     public void stop() {
-        telemetry.addData("Status", "Blue Wall Auto Complete");
+        telemetry.addData("Status", "Red Wall Auto Complete");
         telemetry.addData("Final Time", "%.2f seconds", opmodeTimer.getElapsedTimeSeconds());
         telemetry.update();
     }

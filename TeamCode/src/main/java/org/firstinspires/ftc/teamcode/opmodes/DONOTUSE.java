@@ -9,7 +9,6 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import  com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -18,7 +17,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 
 @Autonomous(name = "AUTO FOR MEET 1", group = "Autonomous")
-public class autonmeet1 extends LinearOpMode {
+public class DONOTUSE extends LinearOpMode {
 
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
@@ -41,6 +40,37 @@ public class autonmeet1 extends LinearOpMode {
     private Path scorePreload;
     private PathChain gotoGrabPickup1, scanCode, scorePickup1, grabPickup1, scorePickup2, grabPickup3, scorePickup3;
 
+    @Override
+    public void runOpMode() throws InterruptedException {
+        shooter = hardwareMap.get(DcMotor.class, "Shooter");
+        intake = hardwareMap.get(DcMotor.class, "Intake");
+        lTransfer = hardwareMap.get(CRServo.class, "Left Transfer");
+        rTransfer = hardwareMap.get(CRServo.class, "Right Transfer");
+
+        //  Initialize follower & paths
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(startPose);
+        buildPaths();
+
+        //  Initialize timers
+        pathTimer = new Timer();
+        actionTimer = new Timer();
+        opmodeTimer = new Timer();
+        opmodeTimer.resetTimer();
+
+        waitForStart();
+
+        if(opModeIsActive() && !isStopRequested()){
+            autonomousPathUpdate();
+            follower.update(); // keep updating follower in loop
+            telemetry.addData("Path State", pathState);
+            telemetry.addData("x", follower.getPose().getX());
+            telemetry.addData("y", follower.getPose().getY());
+            telemetry.addData("heading", follower.getPose().getHeading());
+            telemetry.update();
+        }
+
+    }
     public void buildPaths() {
         /* This is our scorePreload path. We are using a BezierLine, which is a straight line.*/
         scorePreload = new Path(new BezierLine(startPose, scorePose));
@@ -80,7 +110,7 @@ public class autonmeet1 extends LinearOpMode {
             case 0:
                 follower.followPath(scorePreload);
                 setPathState(1);
-                safeWaitSeconds(5);
+                safeWaitSeconds(0);
                 break;
             case 1:
 
@@ -89,7 +119,6 @@ public class autonmeet1 extends LinearOpMode {
             - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
             - Robot Position: "if(follower.getPose().getX() > 36) {}"
             */
-                safeWaitSeconds(10);
 
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if (!follower.isBusy()) {
@@ -97,6 +126,7 @@ public class autonmeet1 extends LinearOpMode {
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(scanCode, true);
+                    safeWaitSeconds(10);
                     setPathState(2);
                 }
                 break;
@@ -144,37 +174,7 @@ public class autonmeet1 extends LinearOpMode {
         pathTimer.resetTimer();
     }
 
-    @Override
-    public void runOpMode() throws InterruptedException {
-            shooter = hardwareMap.get(DcMotor.class, "Shooter");
-            intake = hardwareMap.get(DcMotor.class, "Intake");
-            lTransfer = hardwareMap.get(CRServo.class, "Left Transfer");
-            rTransfer = hardwareMap.get(CRServo.class, "Right Transfer");
 
-        //  Initialize follower & paths
-        follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startPose);
-        buildPaths();
-
-        //  Initialize timers
-        pathTimer = new Timer();
-        actionTimer = new Timer();
-        opmodeTimer = new Timer();
-        opmodeTimer.resetTimer();
-
-            waitForStart();
-
-            if(opModeIsActive() && !isStopRequested()){
-                autonomousPathUpdate();
-                follower.update(); // keep updating follower in loop
-                telemetry.addData("Path State", pathState);
-                telemetry.addData("x", follower.getPose().getX());
-                telemetry.addData("y", follower.getPose().getY());
-                telemetry.addData("heading", follower.getPose().getHeading());
-                telemetry.update();
-            }
-
-    }
 
 
     //method to wait safely with stop button working if needed. Use this instead of sleep

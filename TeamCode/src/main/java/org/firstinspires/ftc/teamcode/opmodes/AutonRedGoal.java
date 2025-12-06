@@ -67,6 +67,8 @@ public class AutonRedGoal extends OpMode {
     }
 
     public void autonomousPathUpdate() {
+        telemetry.addData("Current Path State: ", pathState);
+
         switch (pathState) {
             case 0:
                 // Start: Move to scoring position
@@ -75,8 +77,9 @@ public class AutonRedGoal extends OpMode {
                 break;
 
             case 1:
-                if (!follower.isBusy()) {
-                    // TODO: Score preloaded specimen on high chamber
+                //if (!follower.isBusy()) {
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>2) {
+                    // TODO: Score preloaded specimen
                     follower.followPath(path2, true);
                     setPathState(2);
                 }
@@ -143,7 +146,7 @@ public class AutonRedGoal extends OpMode {
         follower.setStartingPose(startPose);
         pathState = 0;
 
-        // TODO: Initialize robot hardware here
+        // TODO: Initialize robot hardware here -
 
         telemetry.addData("Status", "Red Goal Auto Initialized");
         telemetry.addData("Start", "X: %.1f, Y: %.1f, H: %.0f°",

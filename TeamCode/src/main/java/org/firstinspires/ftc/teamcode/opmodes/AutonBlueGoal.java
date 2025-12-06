@@ -26,18 +26,19 @@ public class AutonBlueGoal extends OpMode {
     private final Pose prepToPickup = new Pose(40.75, 84.25, Math.toRadians(270)); // Prepare to pickup position
     private final Pose pickup1Pose = new Pose(10.98, 84.04, Math.toRadians(180)); // First sample pickup
 
+    private final Pose parkPose = new Pose(48, 60, Math.toRadians(315));
     private Path scorePreload;
     private PathChain scanCode, gotoGrabPickup1, grabPickup1, scorePickup1;
 
     public void buildPaths() {
-        // Path 1: Score preloaded specimen on high chamber
+//        // Path 1: Score preloaded specimen on high chamber
         scorePreload = new Path(new BezierLine(startPose, scorePose));
         scorePreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
 
         // Path 2: Move to scan position for vision detection
         scanCode = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, scanPose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), scanPose.getHeading())
+                .addPath(new BezierLine(scorePose, parkPose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), parkPose.getHeading())
                 .build();
 
         // Path 3: Move to prepare for pickup position
@@ -57,6 +58,7 @@ public class AutonBlueGoal extends OpMode {
                 .addPath(new BezierLine(pickup1Pose, scorePose))
                 .setLinearHeadingInterpolation(pickup1Pose.getHeading(), scorePose.getHeading())
                 .build();
+
     }
 
     public void autonomousPathUpdate() {

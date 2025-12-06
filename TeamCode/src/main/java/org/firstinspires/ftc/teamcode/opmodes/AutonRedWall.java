@@ -20,13 +20,11 @@ public class AutonRedWall extends OpMode {
     private Timer pathTimer, opmodeTimer, actionTimer;
     private int pathState;
 
-    // Hardware
     private DcMotor shooter;
     private DcMotor intake;
     private CRServo left_Transfer;
     private CRServo right_Transfer;
 
-    // Red Wall Starting Position and Poses (mirrored from Blue Wall)
     private final Pose startPose = new Pose(60.000, 8.000, Math.toRadians(270));
     private final Pose scorePose = new Pose(84.000, 74.000, Math.toRadians(225));
     private final Pose intakePose = new Pose(96.000, 60.000, Math.toRadians(90));
@@ -34,13 +32,11 @@ public class AutonRedWall extends OpMode {
     private PathChain path1, path2;
 
     public void buildPaths() {
-        // Path 1: Start (60, 8) to Score Position (84, 74) with heading 225°
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
                 .build();
 
-        // Path 2: Score position to intake position (96, 60) at 90° heading
         path2 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, intakePose))
                 .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
@@ -50,41 +46,38 @@ public class AutonRedWall extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start: Move to scoring position (84, 74) at 225° heading
                 follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
                 if (!follower.isBusy()) {
-                    // Robot is at scoring position (84, 74) facing 225°
-                    // Start shooter spin-up
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setPower(0.9);
                     actionTimer.resetTimer();
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                // Wait 3 seconds for shooter to spin up
-                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
-                    // Now start transfer servos while keeping shooter running
+                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
+                    shooter.setPower(0.9);
+                }
+                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
                     left_Transfer.setPower(-1);
                     right_Transfer.setPower(1);
+                    intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                    intake.setPower(1);
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Run both shooter and transfer for 4 more seconds (7 total)
-                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
-                    // Stop transfer and shooter
+                if (actionTimer.getElapsedTimeSeconds() > 5.5) {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     shooter.setPower(0);
+                    intake.setPower(0);
 
-                    // Now move to intake position
                     follower.followPath(path2, true);
                     setPathState(4);
                 }
@@ -92,14 +85,11 @@ public class AutonRedWall extends OpMode {
 
             case 4:
                 if (!follower.isBusy()) {
-                    // Robot is at intake position (96, 60) facing 90°
-                    // Autonomous complete
                     setPathState(-1);
                 }
                 break;
 
             default:
-                // Autonomous complete - ensure everything is stopped
                 shooter.setPower(0);
                 intake.setPower(0);
                 left_Transfer.setPower(0);
@@ -120,19 +110,16 @@ public class AutonRedWall extends OpMode {
         actionTimer = new Timer();
         opmodeTimer.resetTimer();
 
-        // Initialize Pedro Pathing
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
         pathState = 0;
 
-        // Initialize hardware
         try {
             shooter = hardwareMap.get(DcMotor.class, "Shooter");
             intake = hardwareMap.get(DcMotor.class, "Intake");
             left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
             right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
-
             telemetry.addData("Hardware", "Initialized Successfully");
         } catch (Exception e) {
             telemetry.addData("Hardware Error", e.getMessage());
@@ -178,7 +165,6 @@ public class AutonRedWall extends OpMode {
 
     @Override
     public void stop() {
-        // Make sure everything stops
         shooter.setPower(0);
         intake.setPower(0);
         left_Transfer.setPower(0);

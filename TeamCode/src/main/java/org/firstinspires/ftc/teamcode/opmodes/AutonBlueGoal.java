@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.CRServo;
-//here
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "RUN BLUE GOAL", group = "Autonomous")
@@ -20,13 +20,11 @@ public class AutonBlueGoal extends OpMode {
     private Timer pathTimer, opmodeTimer, actionTimer;
     private int pathState;
 
-    // Hardware
     private DcMotor shooter;
     private DcMotor intake;
     private CRServo left_Transfer;
     private CRServo right_Transfer;
 
-    // Blue Goal Starting Position and Poses
     private final Pose startPose = new Pose(24.000, 127.000, Math.toRadians(317));
     private final Pose scorePose = new Pose(55.000, 87.000, Math.toRadians(307));
     private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
@@ -34,13 +32,11 @@ public class AutonBlueGoal extends OpMode {
     private PathChain path1, path2;
 
     public void buildPaths() {
-        // Path 1: Start (24, 127) to Score Position (63, 74) with heading 315°
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
                 .setConstantHeadingInterpolation(startPose.getHeading())
                 .build();
 
-        // Path 2: Score position to intake position (48, 60) at 90° heading
         path2 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, intakePose))
                 .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
@@ -50,41 +46,38 @@ public class AutonBlueGoal extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start: Move to scoring position (63, 74) at 315° heading
                 follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
                 if (!follower.isBusy()) {
-                    // Robot is at scoring position (63, 74) facing 315°
-                    // Start shooter spin-up
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setPower(0.9);
                     actionTimer.resetTimer();
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                // Wait 3 seconds for shooter to spin up
-                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
-                    // Now start transfer servos while keeping shooter running
+                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
+                    shooter.setPower(0.9);
+                }
+                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
                     left_Transfer.setPower(-1);
                     right_Transfer.setPower(1);
+                    intake.setDirection(DcMotorSimple.Direction.FORWARD);
+                    intake.setPower(1);
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Run both shooter and transfer for 4 more seconds (7 total)
-                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
-                    // Stop transfer and shooter
+                if (actionTimer.getElapsedTimeSeconds() > 5.5) {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     shooter.setPower(0);
+                    intake.setPower(0);
 
-                    // Now move to intake position
                     follower.followPath(path2, true);
                     setPathState(4);
                 }
@@ -92,14 +85,11 @@ public class AutonBlueGoal extends OpMode {
 
             case 4:
                 if (!follower.isBusy()) {
-                    // Robot is at intake position (48, 60) facing 90°
-                    // Autonomous complete
                     setPathState(-1);
                 }
                 break;
 
             default:
-                // Autonomous complete - ensure everything is stopped
                 shooter.setPower(0);
                 intake.setPower(0);
                 left_Transfer.setPower(0);
@@ -120,19 +110,16 @@ public class AutonBlueGoal extends OpMode {
         actionTimer = new Timer();
         opmodeTimer.resetTimer();
 
-        // Initialize Pedro Pathing
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
         pathState = 0;
 
-        // Initialize hardware
         try {
             shooter = hardwareMap.get(DcMotor.class, "Shooter");
             intake = hardwareMap.get(DcMotor.class, "Intake");
             left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
             right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
-
             telemetry.addData("Hardware", "Initialized Successfully");
         } catch (Exception e) {
             telemetry.addData("Hardware Error", e.getMessage());
@@ -178,7 +165,6 @@ public class AutonBlueGoal extends OpMode {
 
     @Override
     public void stop() {
-        // Make sure everything stops
         shooter.setPower(0);
         intake.setPower(0);
         left_Transfer.setPower(0);

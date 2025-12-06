@@ -13,7 +13,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Blue Wall Auto", group = "Autonomous")
+@Autonomous(name = "RUN BLUE WALL", group = "Autonomous")
 public class AutonBlueWall extends OpMode {
 
     private Follower follower;
@@ -28,16 +28,10 @@ public class AutonBlueWall extends OpMode {
 
     // Blue Wall Starting Position and Poses
     private final Pose startPose = new Pose(72.000, 8.000, Math.toRadians(270));
-    private final Pose scorePose = new Pose(72.000, 77.000, Math.toRadians(270));
-    private final Pose shootPose = new Pose(72.000, 77.000, Math.toRadians(325));
+    private final Pose scorePose = new Pose(72.000, 42.000, Math.toRadians(270));
+    private final Pose shootPose = new Pose(72.000, 42.000, Math.toRadians(325));
 
-    //private final Pose scanPose = new Pose(71.500, 119.000, Math.toRadians(270));
-    //private final Pose prepToPickup = new Pose(40.750, 84.250, Math.toRadians(180));
-    //private final Pose pickup1Pose = new Pose(10.000, 84.000, Math.toRadians(180));
-    //private final Pose scorePickup1Pose = new Pose(53.200, 106.200, Math.toRadians(315));
-    //private final Pose parkPose = new Pose(40.500, 60.200, Math.toRadians(180));
-
-    private PathChain path1, path2; //, path3, path4, path5, path6;
+    private PathChain path1, path2;
 
     public void buildPaths() {
         // Path 1: Start to Score Position (no rotation yet)
@@ -47,53 +41,25 @@ public class AutonBlueWall extends OpMode {
                 .build();
 
         // Path 2: Rotate in place from 270° to 325° (counter-clockwise)
+        // Using a tiny movement to ensure path executes
+        Pose rotationHelper = new Pose(72.000, 42.001, Math.toRadians(325));
         path2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, shootPose))
+                .addPath(new BezierLine(scorePose, rotationHelper))
                 .setLinearHeadingInterpolation(scorePose.getHeading(), shootPose.getHeading())
                 .build();
-
-        // Path 2: Score to Scan Position
-        //path2 = follower.pathBuilder()
-        //        .addPath(new BezierLine(scorePose, scanPose))
-        //        .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(270))
-        //        .build();
-
-        // Path 3: Scan to Prep for Pickup
-        //path3 = follower.pathBuilder()
-        //        .addPath(new BezierLine(scanPose, prepToPickup))
-        //        .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(180))
-        //        .build();
-
-        // Path 4: Prep to Pickup Sample
-        //path4 = follower.pathBuilder()
-        //        .addPath(new BezierLine(prepToPickup, pickup1Pose))
-        //        .setTangentHeadingInterpolation()
-        //        .build();
-
-        // Path 5: Pickup to Score Sample
-        //path5 = follower.pathBuilder()
-        //        .addPath(new BezierLine(pickup1Pose, scorePickup1Pose))
-        //        .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(315))
-        //        .build();
-
-        // Path 6: Score to Park
-        //path6 = follower.pathBuilder()
-        //        .addPath(new BezierLine(scorePickup1Pose, parkPose))
-        //        .setLinearHeadingInterpolation(Math.toRadians(315), Math.toRadians(180))
-        //        .build();
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start: Move to position (72, 57) maintaining 270° heading
+                // Start: Move to position (72, 42) maintaining 270° heading
                 follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
                 if (!follower.isBusy()) {
-                    // Robot is at (72, 57) facing 270°
+                    // Robot is at (72, 42) facing 270°
                     // Now rotate counter-clockwise to 325°
                     follower.followPath(path2, true);
                     setPathState(2);
@@ -103,17 +69,20 @@ public class AutonBlueWall extends OpMode {
             case 2:
                 if (!follower.isBusy()) {
                     // Robot is now facing 325°
-                    // Start shooting sequence
+                    // Set shooter direction first, then power
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setPower(0.8);
                     actionTimer.resetTimer();
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Wait for shooter to spin up (0.5 seconds)
-                if (actionTimer.getElapsedTimeSeconds() > 0.5) {
+                // Spin up shooter first (wait a moment for direction to take effect)
+                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
+                    shooter.setPower(0.8);
+                }
+                // Wait 3 seconds total, then start transfer while shooter continues
+                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
                     // Run transfer to feed specimen into shooter
                     left_Transfer.setPower(-1);
                     right_Transfer.setPower(1);
@@ -122,8 +91,8 @@ public class AutonBlueWall extends OpMode {
                 break;
 
             case 4:
-                // Wait for transfer to complete (1.5 seconds total)
-                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
+                // Run both shooter and transfer for ~4 more seconds (7 total)
+                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
                     // Stop transfer and shooter
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
@@ -207,6 +176,7 @@ public class AutonBlueWall extends OpMode {
                 follower.getPose().getX(), follower.getPose().getY());
         telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.addData("Action Timer", "%.1f sec", actionTimer.getElapsedTimeSeconds());
         telemetry.addData("Shooter Power", shooter.getPower());
         telemetry.update();
     }

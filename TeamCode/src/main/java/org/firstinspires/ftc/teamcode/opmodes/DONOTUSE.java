@@ -16,7 +16,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 
-@Autonomous(name = "AUTO FOR MEET 1", group = "Autonomous")
+@Autonomous(name = "DO NOT USE", group = "Autonomous")
 public class DONOTUSE extends LinearOpMode {
 
     private Follower follower;

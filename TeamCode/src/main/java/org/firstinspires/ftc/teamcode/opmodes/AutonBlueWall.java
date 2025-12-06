@@ -27,77 +27,72 @@ public class AutonBlueWall extends OpMode {
     private CRServo right_Transfer;
 
     // Blue Wall Starting Position and Poses
-    private final Pose startPose = new Pose(72.000, 8.000, Math.toRadians(270));
-    private final Pose scorePose = new Pose(72.000, 42.000, Math.toRadians(270));
-    private final Pose shootPose = new Pose(72.000, 42.000, Math.toRadians(325));
+    private final Pose startPose = new Pose(84.000, 8.000, Math.toRadians(270));
+    private final Pose scorePose = new Pose(63.000, 74.000, Math.toRadians(315));
+    private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
 
     private PathChain path1, path2;
 
     public void buildPaths() {
-        // Path 1: Start to Score Position (no rotation yet)
+        // Path 1: Start (84, 8) to Score Position (63, 74) with heading 315°
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
-                .setConstantHeadingInterpolation(startPose.getHeading())
+                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
                 .build();
 
-        // Path 2: Rotate in place from 270° to 325° (counter-clockwise)
-        // Using a tiny movement to ensure path executes
-        Pose rotationHelper = new Pose(72.000, 42.001, Math.toRadians(325));
+        // Path 2: Score position to intake position (48, 60) at 90° heading
         path2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, rotationHelper))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), shootPose.getHeading())
+                .addPath(new BezierLine(scorePose, intakePose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
                 .build();
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start: Move to position (72, 42) maintaining 270° heading
+                // Start: Move to scoring position (63, 74) at 315° heading
                 follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
                 if (!follower.isBusy()) {
-                    // Robot is at (72, 42) facing 270°
-                    // Now rotate counter-clockwise to 325°
-                    follower.followPath(path2, true);
+                    // Robot is at scoring position (63, 74) facing 315°
+                    // Start shooter spin-up
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    shooter.setPower(0.9);
+                    actionTimer.resetTimer();
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                if (!follower.isBusy()) {
-                    // Robot is now facing 325°
-                    // Set shooter direction first, then power
-                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    actionTimer.resetTimer();
+                // Wait 3 seconds for shooter to spin up
+                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
+                    // Now start transfer servos while keeping shooter running
+                    left_Transfer.setPower(-1);
+                    right_Transfer.setPower(1);
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Spin up shooter first (wait a moment for direction to take effect)
-                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
-                    shooter.setPower(0.8);
-                }
-                // Wait 3 seconds total, then start transfer while shooter continues
-                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
-                    // Run transfer to feed specimen into shooter
-                    left_Transfer.setPower(-1);
-                    right_Transfer.setPower(1);
-                    setPathState(4);
-                }
-                break;
-
-            case 4:
-                // Run both shooter and transfer for ~4 more seconds (7 total)
+                // Run both shooter and transfer for 4 more seconds (7 total)
                 if (actionTimer.getElapsedTimeSeconds() > 7.0) {
                     // Stop transfer and shooter
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     shooter.setPower(0);
 
+                    // Now move to intake position
+                    follower.followPath(path2, true);
+                    setPathState(4);
+                }
+                break;
+
+            case 4:
+                if (!follower.isBusy()) {
+                    // Robot is at intake position (48, 60) facing 90°
                     // Autonomous complete
                     setPathState(-1);
                 }
@@ -144,12 +139,12 @@ public class AutonBlueWall extends OpMode {
         }
 
         telemetry.addData("Status", "Blue Wall Auto Initialized");
-        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: 270°",
+        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: 0°",
                 startPose.getX(), startPose.getY());
-        telemetry.addData("Score Pose", "X: %.1f, Y: %.1f, H: 270°",
+        telemetry.addData("Score Pose", "X: %.1f, Y: %.1f, H: 315°",
                 scorePose.getX(), scorePose.getY());
-        telemetry.addData("Shoot Pose", "X: %.1f, Y: %.1f, H: 325°",
-                shootPose.getX(), shootPose.getY());
+        telemetry.addData("Intake Pose", "X: %.1f, Y: %.1f, H: 90°",
+                intakePose.getX(), intakePose.getY());
         telemetry.update();
     }
 

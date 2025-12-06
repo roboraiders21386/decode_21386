@@ -3,134 +3,111 @@ package org.firstinspires.ftc.teamcode.opmodes;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.CRServo;
+//here
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Blue Goal Auto - dont use yet", group = "Autonomous")
+@Autonomous(name = "RUN BLUE GOAL", group = "Autonomous")
 public class AutonBlueGoal extends OpMode {
 
     private Follower follower;
-    private Timer pathTimer, opmodeTimer;
-
+    private Timer pathTimer, opmodeTimer, actionTimer;
     private int pathState;
 
-    // Based on the diagram - coordinates adjusted to match field layout
-    private final Pose startPose = new Pose(27.66, 128.38, Math.toRadians(315)); // Start position
-    private final Pose scorePose = new Pose(53.21, 106.21, Math.toRadians(315)); // High basket scoring position
-    private final Pose scanPose = new Pose(71.58, 119.09, Math.toRadians(270)); // Scan position for vision
-    private final Pose prepToPickup = new Pose(40.75, 84.25, Math.toRadians(270)); // Prepare to pickup position
-    private final Pose pickup1Pose = new Pose(10.98, 84.04, Math.toRadians(180)); // First sample pickup
+    // Hardware
+    private DcMotor shooter;
+    private DcMotor intake;
+    private CRServo left_Transfer;
+    private CRServo right_Transfer;
 
-    private final Pose parkPose = new Pose(48, 60, Math.toRadians(315));
-    private Path scorePreload;
-    private PathChain scanCode, gotoGrabPickup1, grabPickup1, scorePickup1;
+    // Blue Goal Starting Position and Poses
+    private final Pose startPose = new Pose(24.000, 127.000, Math.toRadians(315));
+    private final Pose scorePose = new Pose(63.000, 74.000, Math.toRadians(315));
+    private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
+
+    private PathChain path1, path2;
 
     public void buildPaths() {
-//        // Path 1: Score preloaded specimen on high chamber
-        scorePreload = new Path(new BezierLine(startPose, scorePose));
-        scorePreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
-
-        // Path 2: Move to scan position for vision detection
-        scanCode = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, parkPose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), parkPose.getHeading())
+        // Path 1: Start (24, 127) to Score Position (63, 74) with heading 315°
+        path1 = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, scorePose))
+                .setConstantHeadingInterpolation(startPose.getHeading())
                 .build();
 
-        // Path 3: Move to prepare for pickup position
-        gotoGrabPickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(scanPose, prepToPickup))
-                .setLinearHeadingInterpolation(scanPose.getHeading(), prepToPickup.getHeading())
+        // Path 2: Score position to intake position (48, 60) at 90° heading
+        path2 = follower.pathBuilder()
+                .addPath(new BezierLine(scorePose, intakePose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
                 .build();
-
-        // Path 4: Move to first sample and grab it
-        grabPickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(prepToPickup, pickup1Pose))
-                .setLinearHeadingInterpolation(prepToPickup.getHeading(), pickup1Pose.getHeading())
-                .build();
-
-        // Path 5: Return to scoring position with sample
-        scorePickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1Pose, scorePose))
-                .setLinearHeadingInterpolation(pickup1Pose.getHeading(), scorePose.getHeading())
-                .build();
-
     }
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                // Start: Score preloaded specimen
-                follower.followPath(scorePreload);
+                // Start: Move to scoring position (63, 74) at 315° heading
+                follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
-                // Wait until robot reaches scoring position
                 if (!follower.isBusy()) {
-                    // TODO: Add code here to score specimen on high chamber
-                    // e.g., lift.setPosition(HIGH_POSITION); claw.release();
-
-                    follower.followPath(scanCode, true);
+                    // Robot is at scoring position (63, 74) facing 315°
+                    // Start shooter spin-up
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    shooter.setPower(0.9);
+                    actionTimer.resetTimer();
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                // Wait until robot reaches scan position
-                if (!follower.isBusy()) {
-                    // TODO: Add code here to scan for sample colors using vision
-                    // e.g., processVisionData();
-
-                    follower.followPath(gotoGrabPickup1, true);
+                // Wait 3 seconds for shooter to spin up
+                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
+                    // Now start transfer servos while keeping shooter running
+                    left_Transfer.setPower(-1);
+                    right_Transfer.setPower(1);
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                // Wait until robot reaches prep position
-                if (!follower.isBusy()) {
-                    // TODO: Add code here to prepare intake/claw
-                    // e.g., intake.setPower(1.0); arm.setPosition(PICKUP_POSITION);
+                // Run both shooter and transfer for 4 more seconds (7 total)
+                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
+                    // Stop transfer and shooter
+                    left_Transfer.setPower(0);
+                    right_Transfer.setPower(0);
+                    shooter.setPower(0);
 
-                    follower.followPath(grabPickup1, true);
+                    // Now move to intake position
+                    follower.followPath(path2, true);
                     setPathState(4);
                 }
                 break;
 
             case 4:
-                // Wait until robot reaches first sample
                 if (!follower.isBusy()) {
-                    // TODO: Add code here to grab the sample
-                    // e.g., claw.close(); arm.setPosition(CARRY_POSITION);
-
-                    follower.followPath(scorePickup1, true);
-                    setPathState(5);
-                }
-                break;
-
-            case 5:
-                // Wait until robot returns to scoring position
-                if (!follower.isBusy()) {
-                    // TODO: Add code here to score sample in high basket
-                    // e.g., lift.setPosition(HIGH_BASKET); claw.release();
-
-                    // End autonomous
+                    // Robot is at intake position (48, 60) facing 90°
+                    // Autonomous complete
                     setPathState(-1);
                 }
                 break;
 
             default:
-                // Autonomous complete - do nothing
+                // Autonomous complete - ensure everything is stopped
+                shooter.setPower(0);
+                intake.setPower(0);
+                left_Transfer.setPower(0);
+                right_Transfer.setPower(0);
                 break;
         }
     }
 
-    /** Change path state and reset timer **/
     public void setPathState(int pState) {
         pathState = pState;
         pathTimer.resetTimer();
@@ -138,68 +115,75 @@ public class AutonBlueGoal extends OpMode {
 
     @Override
     public void init() {
-        // Initialize timers
         pathTimer = new Timer();
         opmodeTimer = new Timer();
+        actionTimer = new Timer();
         opmodeTimer.resetTimer();
 
-        // Initialize follower with hardware map
+        // Initialize Pedro Pathing
         follower = Constants.createFollower(hardwareMap);
-
-        // Build all paths
         buildPaths();
-
-        // Set starting pose
         follower.setStartingPose(startPose);
-
-        // Initialize path state
         pathState = 0;
 
-        // TODO: Initialize your robot hardware here
-        // e.g., lift = hardwareMap.get(DcMotor.class, "lift");
-        //       claw = hardwareMap.get(Servo.class, "claw");
+        // Initialize hardware
+        try {
+            shooter = hardwareMap.get(DcMotor.class, "Shooter");
+            intake = hardwareMap.get(DcMotor.class, "Intake");
+            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
+            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
+
+            telemetry.addData("Hardware", "Initialized Successfully");
+        } catch (Exception e) {
+            telemetry.addData("Hardware Error", e.getMessage());
+        }
 
         telemetry.addData("Status", "Blue Goal Auto Initialized");
-        telemetry.addData("Start Pose", "X: %.2f, Y: %.2f, Heading: %.2f°",
-                startPose.getX(), startPose.getY(), Math.toDegrees(startPose.getHeading()));
+        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: 315°",
+                startPose.getX(), startPose.getY());
+        telemetry.addData("Score Pose", "X: %.1f, Y: %.1f, H: 315°",
+                scorePose.getX(), scorePose.getY());
+        telemetry.addData("Intake Pose", "X: %.1f, Y: %.1f, H: 90°",
+                intakePose.getX(), intakePose.getY());
         telemetry.update();
     }
 
     @Override
     public void start() {
-        // Reset timers when autonomous starts
         opmodeTimer.resetTimer();
         pathTimer.resetTimer();
-
-        // Ensure we start in state 0
+        actionTimer.resetTimer();
         pathState = 0;
     }
 
-    // Main loop - this is called continuously after pressing "Play"
     @Override
     public void loop() {
-        // CRITICAL: These must be called every loop iteration
-        follower.update();          // Updates Pedro Pathing follower
-        autonomousPathUpdate();     // Updates our state machine
+        follower.update();
+        autonomousPathUpdate();
 
-        // Add a timeout safety feature (30 seconds)
         if (opmodeTimer.getElapsedTimeSeconds() > 30) {
             requestOpModeStop();
         }
 
-        // Telemetry for debugging
         telemetry.addData("Path State", pathState);
         telemetry.addData("Follower Busy", follower.isBusy());
-        telemetry.addData("X Position", "%.2f", follower.getPose().getX());
-        telemetry.addData("Y Position", "%.2f", follower.getPose().getY());
-        telemetry.addData("Heading", "%.2f°", Math.toDegrees(follower.getPose().getHeading()));
-        telemetry.addData("Elapsed Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.addData("Position", "X: %.1f, Y: %.1f",
+                follower.getPose().getX(), follower.getPose().getY());
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.addData("Action Timer", "%.1f sec", actionTimer.getElapsedTimeSeconds());
+        telemetry.addData("Shooter Power", shooter.getPower());
         telemetry.update();
     }
 
     @Override
     public void stop() {
-        // Clean up when autonomous stops
+        // Make sure everything stops
+        shooter.setPower(0);
+        intake.setPower(0);
+        left_Transfer.setPower(0);
+        right_Transfer.setPower(0);
+
         telemetry.addData("Status", "Blue Goal Auto Complete");
         telemetry.addData("Final Time", "%.2f seconds", opmodeTimer.getElapsedTimeSeconds());
         telemetry.update();

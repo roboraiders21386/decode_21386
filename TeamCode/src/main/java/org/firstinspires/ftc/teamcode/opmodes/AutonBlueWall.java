@@ -28,7 +28,7 @@ public class AutonBlueWall extends OpMode {
 
     // Blue Wall Starting Position and Poses
     private final Pose startPose = new Pose(84.000, 8.000, Math.toRadians(270));
-    private final Pose scorePose = new Pose(63.000, 74.000, Math.toRadians(315));
+    private final Pose scorePose = new Pose(60.000, 74.000, Math.toRadians(315));
     private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
 
     private PathChain path1, path2;

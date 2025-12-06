@@ -27,8 +27,8 @@ public class AutonBlueGoal extends OpMode {
     private CRServo right_Transfer;
 
     // Blue Goal Starting Position and Poses
-    private final Pose startPose = new Pose(24.000, 127.000, Math.toRadians(315));
-    private final Pose scorePose = new Pose(63.000, 74.000, Math.toRadians(315));
+    private final Pose startPose = new Pose(24.000, 127.000, Math.toRadians(317));
+    private final Pose scorePose = new Pose(55.000, 87.000, Math.toRadians(307));
     private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
 
     private PathChain path1, path2;

@@ -25,7 +25,7 @@ public class AutonBlueWall extends OpMode {
     private CRServo left_Transfer;
     private CRServo right_Transfer;
 
-    private final Pose startPose = new Pose(84.000, 8.000, Math.toRadians(270));
+    private final Pose startPose = new Pose(60.000, 8.000, Math.toRadians(270));
     private final Pose scorePose = new Pose(60.000, 74.000, Math.toRadians(315));
     private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
 

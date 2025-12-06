@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "blue goal LEAVE only", group = "Autonomous")
+@Autonomous(name = "do not use - BGL", group = "Autonomous")
 public class BlueGoal_LEAVE extends OpMode {
 
     private Follower follower;

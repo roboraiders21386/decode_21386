@@ -7,125 +7,103 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.CRServo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "Red Goal Auto - dont use yet", group = "Autonomous")
+@Autonomous(name = "RUN RED GOAL", group = "Autonomous")
 public class AutonRedGoal extends OpMode {
 
     private Follower follower;
-    private Timer pathTimer, opmodeTimer;
+    private Timer pathTimer, opmodeTimer, actionTimer;
     private int pathState;
 
-    // Red Goal Starting Position and Poses
-    private final Pose startPose = new Pose(96.000, 136.000, Math.toRadians(270));
-    private final Pose scorePose = new Pose(91.000, 106.205, Math.toRadians(225));
-    private final Pose scanPose = new Pose(73.500, 119.000, Math.toRadians(90));
-    private final Pose prepToPickup = new Pose(103.250, 84.250, Math.toRadians(0));
-    private final Pose pickup1Pose = new Pose(127.000, 84.000, Math.toRadians(0));
-    private final Pose scorePickup1Pose = new Pose(88.200, 106.200, Math.toRadians(225));
-    private final Pose parkPose = new Pose(103.200, 60.200, Math.toRadians(360));
+    // Hardware
+    private DcMotor shooter;
+    private DcMotor intake;
+    private CRServo left_Transfer;
+    private CRServo right_Transfer;
 
-    private PathChain path1, path2, path3, path4, path5, path6;
+    // Red Goal Starting Position and Poses (mirrored from Blue Goal)
+    private final Pose startPose = new Pose(120.000, 127.000, Math.toRadians(223));
+    private final Pose scorePose = new Pose(89.000, 87.000, Math.toRadians(233));
+    private final Pose intakePose = new Pose(96.000, 60.000, Math.toRadians(90));
+
+    private PathChain path1, path2;
 
     public void buildPaths() {
-        // Path 1: Start to Score Preload
+        // Path 1: Start (120, 127) to Score Position (89, 87) with heading 233°
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(225))
+                .setConstantHeadingInterpolation(startPose.getHeading())
                 .build();
 
-        // Path 2: Score to Scan Position
+        // Path 2: Score position to intake position (96, 60) at 90° heading
         path2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, scanPose))
-                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(90))
-                .build();
-
-        // Path 3: Scan to Prep for Pickup
-        path3 = follower.pathBuilder()
-                .addPath(new BezierLine(scanPose, prepToPickup))
-                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(0))
-                .build();
-
-        // Path 4: Prep to Pickup Sample
-        path4 = follower.pathBuilder()
-                .addPath(new BezierLine(prepToPickup, pickup1Pose))
-                .setTangentHeadingInterpolation()
-                .build();
-
-        // Path 5: Pickup to Score Sample
-        path5 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1Pose, scorePickup1Pose))
-                .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(225))
-                .build();
-
-        // Path 6: Score to Park
-        path6 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePickup1Pose, parkPose))
-                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(360))
+                .addPath(new BezierLine(scorePose, intakePose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
                 .build();
     }
 
     public void autonomousPathUpdate() {
-        telemetry.addData("Current Path State: ", pathState);
-
         switch (pathState) {
             case 0:
-                // Start: Move to scoring position
+                // Start: Move to scoring position (89, 87) at 233° heading
                 follower.followPath(path1, true);
                 setPathState(1);
                 break;
 
             case 1:
-                //if (!follower.isBusy()) {
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>2) {
-                    // TODO: Score preloaded specimen
-                    follower.followPath(path2, true);
+                if (!follower.isBusy()) {
+                    // Robot is at scoring position (89, 87) facing 233°
+                    // Start shooter spin-up
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    shooter.setPower(0.9);
+                    actionTimer.resetTimer();
                     setPathState(2);
                 }
                 break;
 
             case 2:
-                if (!follower.isBusy()) {
-                    // TODO: Scan for sample colors using vision
-                    follower.followPath(path3, true);
+                // Wait 3 seconds for shooter to spin up
+                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
+                    // Now start transfer servos while keeping shooter running
+                    left_Transfer.setPower(-1);
+                    right_Transfer.setPower(1);
                     setPathState(3);
                 }
                 break;
 
             case 3:
-                if (!follower.isBusy()) {
-                    // TODO: Prepare intake/arm for pickup
-                    follower.followPath(path4, true);
+                // Run both shooter and transfer for 4 more seconds (7 total)
+                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
+                    // Stop transfer and shooter
+                    left_Transfer.setPower(0);
+                    right_Transfer.setPower(0);
+                    shooter.setPower(0);
+
+                    // Now move to intake position
+                    follower.followPath(path2, true);
                     setPathState(4);
                 }
                 break;
 
             case 4:
                 if (!follower.isBusy()) {
-                    // TODO: Grab the sample
-                    follower.followPath(path5, true);
-                    setPathState(5);
-                }
-                break;
-
-            case 5:
-                if (!follower.isBusy()) {
-                    // TODO: Score sample in high basket
-                    follower.followPath(path6, true);
-                    setPathState(6);
-                }
-                break;
-
-            case 6:
-                if (!follower.isBusy()) {
-                    // Autonomous complete - parked
+                    // Robot is at intake position (96, 60) facing 90°
+                    // Autonomous complete
                     setPathState(-1);
                 }
                 break;
 
             default:
-                // Autonomous complete
+                // Autonomous complete - ensure everything is stopped
+                shooter.setPower(0);
+                intake.setPower(0);
+                left_Transfer.setPower(0);
+                right_Transfer.setPower(0);
                 break;
         }
     }
@@ -139,18 +117,34 @@ public class AutonRedGoal extends OpMode {
     public void init() {
         pathTimer = new Timer();
         opmodeTimer = new Timer();
+        actionTimer = new Timer();
         opmodeTimer.resetTimer();
 
+        // Initialize Pedro Pathing
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
         pathState = 0;
 
-        // TODO: Initialize robot hardware here -
+        // Initialize hardware
+        try {
+            shooter = hardwareMap.get(DcMotor.class, "Shooter");
+            intake = hardwareMap.get(DcMotor.class, "Intake");
+            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
+            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
+
+            telemetry.addData("Hardware", "Initialized Successfully");
+        } catch (Exception e) {
+            telemetry.addData("Hardware Error", e.getMessage());
+        }
 
         telemetry.addData("Status", "Red Goal Auto Initialized");
-        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: %.0f°",
-                startPose.getX(), startPose.getY(), Math.toDegrees(startPose.getHeading()));
+        telemetry.addData("Start", "X: %.1f, Y: %.1f, H: 223°",
+                startPose.getX(), startPose.getY());
+        telemetry.addData("Score Pose", "X: %.1f, Y: %.1f, H: 233°",
+                scorePose.getX(), scorePose.getY());
+        telemetry.addData("Intake Pose", "X: %.1f, Y: %.1f, H: 90°",
+                intakePose.getX(), intakePose.getY());
         telemetry.update();
     }
 
@@ -158,6 +152,7 @@ public class AutonRedGoal extends OpMode {
     public void start() {
         opmodeTimer.resetTimer();
         pathTimer.resetTimer();
+        actionTimer.resetTimer();
         pathState = 0;
     }
 
@@ -176,11 +171,19 @@ public class AutonRedGoal extends OpMode {
                 follower.getPose().getX(), follower.getPose().getY());
         telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
+        telemetry.addData("Action Timer", "%.1f sec", actionTimer.getElapsedTimeSeconds());
+        telemetry.addData("Shooter Power", shooter.getPower());
         telemetry.update();
     }
 
     @Override
     public void stop() {
+        // Make sure everything stops
+        shooter.setPower(0);
+        intake.setPower(0);
+        left_Transfer.setPower(0);
+        right_Transfer.setPower(0);
+
         telemetry.addData("Status", "Red Goal Auto Complete");
         telemetry.addData("Final Time", "%.2f seconds", opmodeTimer.getElapsedTimeSeconds());
         telemetry.update();

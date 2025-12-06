@@ -10,16 +10,21 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "blue wall PARK only", group = "Autonomous")
-public class bluewallPARK extends OpMode {
+@Autonomous(name = "blue wall LEAVE only", group = "Autonomous")
+public class BlueWall_LEAVE extends OpMode {
 
     private Follower follower;
     private Timer opmodeTimer;
     private int pathState;
 
     // Blue Wall Starting Position and Park Position
-    private final Pose startPose = new Pose(72.000, 8.000, Math.toRadians(270));
-    private final Pose parkPose = new Pose(89.000, 23.000, Math.toRadians(270));
+    //private final Pose startPose = new Pose(72.000, 8.000, Math.toRadians(270));
+    //private final Pose parkPose = new Pose(89.000, 23.000, Math.toRadians(270));
+
+    //Updated co-ordinates to be on the BLUE side
+    private final Pose startPose = new Pose(60.000, 8.000, Math.toRadians(270));
+    private final Pose parkPose = new Pose(60.000, 30, Math.toRadians(270));
+
 
     private PathChain parkPath;
 

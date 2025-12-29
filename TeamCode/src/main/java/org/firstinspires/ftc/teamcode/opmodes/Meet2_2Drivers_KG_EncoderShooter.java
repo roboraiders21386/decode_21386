@@ -28,6 +28,7 @@ public class Meet2_2Drivers_KG_EncoderShooter extends LinearOpMode {
     // shooter velocity target (ticks/sec)
     double targetVelocity = 1200;
     double increment = 75;
+    double test = 0.0;
 
     final double NOMINAL_VOLTAGE = 12.0;
     double compensated;

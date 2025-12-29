@@ -32,11 +32,14 @@ public class AutonRedWall extends OpMode {
     private PathChain path1, path2;
 
     public void buildPaths() {
+        // Path 1: Use tangential heading for faster turning
         path1 = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
-                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
+                .setTangentHeadingInterpolation()
                 .build();
 
+        // Path 2: Turn the SHORT way from 225° to 90° (go counterclockwise: 225 -> 180 -> 135 -> 90)
+        // This is 135° counterclockwise instead of 225° clockwise
         path2 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, intakePose))
                 .setLinearHeadingInterpolation(scorePose.getHeading(), intakePose.getHeading())
@@ -52,17 +55,31 @@ public class AutonRedWall extends OpMode {
 
             case 1:
                 if (!follower.isBusy()) {
-                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    actionTimer.resetTimer();
-                    setPathState(2);
+                    // Check if heading is close to target (225° ± 5°)
+                    double currentHeading = Math.toDegrees(follower.getPose().getHeading());
+                    double targetHeading = 225.0;
+                    double headingError = Math.abs(currentHeading - targetHeading);
+
+                    // Normalize error to be between 0 and 180
+                    if (headingError > 180) {
+                        headingError = 360 - headingError;
+                    }
+
+                    if (headingError < 10) {
+                        // Heading is close enough, start shooter
+                        shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                        shooter.setPower(0.9);
+                        actionTimer.resetTimer();
+                        setPathState(2);
+                    }
+                    // Otherwise wait for heading to settle
                 }
                 break;
 
             case 2:
-                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
-                    shooter.setPower(0.9);
-                }
-                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
+                // Wait 3 seconds for shooter to spin up fully
+                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
+                    // Now start transfer and intake
                     left_Transfer.setPower(-1);
                     right_Transfer.setPower(1);
                     intake.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -72,12 +89,14 @@ public class AutonRedWall extends OpMode {
                 break;
 
             case 3:
-                if (actionTimer.getElapsedTimeSeconds() > 5.5) {
+                // Run shooter, transfer, and intake for 4 more seconds (7 total)
+                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     shooter.setPower(0);
                     intake.setPower(0);
 
+                    // Move to intake position
                     follower.followPath(path2, true);
                     setPathState(4);
                 }
@@ -85,6 +104,7 @@ public class AutonRedWall extends OpMode {
 
             case 4:
                 if (!follower.isBusy()) {
+                    // Reached intake position
                     setPathState(-1);
                 }
                 break;

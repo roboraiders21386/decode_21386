@@ -16,18 +16,18 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .translationalPIDFCoefficients(new PIDFCoefficients(0.07,0,0,0))
-            .headingPIDFCoefficients(new PIDFCoefficients(0.02,0.1,0,0))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.04, 0.2, 0.00001, 0.01, 0.6))
-            .forwardZeroPowerAcceleration(-41.232)
-            .lateralZeroPowerAcceleration(-77.06)
-            .mass(11);
+            .headingPIDFCoefficients(new PIDFCoefficients(0.4,0.1,0.3,0))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.2, 0.2, 0.00003, 0.01, 0.6))
+            .forwardZeroPowerAcceleration(-44.885)
+            .lateralZeroPowerAcceleration(-85.022)
+            .mass(9.62);
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
-            .maxPower(0.7)
-            .xVelocity(72.269)
-            .yVelocity(52.805)
+            .maxPower(0.5)
+            .xVelocity(59.9)
+            .yVelocity(40)
             .rightFrontMotorName("RF")
             .rightRearMotorName("RB")
             .leftRearMotorName("LB")
@@ -52,8 +52,8 @@ public class Constants {
             .IMU_HardwareMapName("imu")
             .forwardPodY(-2)
             .strafePodX(0)
-            .forwardTicksToInches(0.00204) //11/30/2025 closest tested
-            .strafeTicksToInches(0.002) //0.3, 1.6, 0.035 0.0019
+            .forwardTicksToInches(0.0027) //11/30/2025 - 0.00204 current 12/28/2025
+            .strafeTicksToInches(0.0024) //0.3, 1.6, 0.035 0.0019 0.07 0.0027
             .forwardEncoderDirection(Encoder.FORWARD)
             .strafeEncoderDirection(Encoder.REVERSE)
             .IMU_Orientation(

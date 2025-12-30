@@ -30,46 +30,59 @@ public class AutonBlueWallLongRange extends OpMode {
     private final double LONG_RANGE_VELOCITY = 1660;
     private final double NOMINAL_VOLTAGE = 12.0;
 
+
     // Paths
-    private PathChain goToShoot, Path2, Path3, Path4, Path5, Path6, Path7;
+    private final Pose startPose = new Pose(24, 127, Math.toRadians(315)); // Start Pose of our robot.
+    // Initialize poses
+    private final Pose PPGPose = new Pose(60, 75.5, Math.toRadians(160)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PGPPose = new Pose(60, 59.5, Math.toRadians(160)); // Middle (Second Set) of Artifacts from the Spike Mark.
+    private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
+
+    private final Pose scorePose = new Pose(60, 95, Math.toRadians(315)); // Scoring Pose of our robot.
+    private PathChain goToShootPreload, goToIntake, collectArtifacts, goToShoot1, goToPickupHP, collectArtifactsHP, goToShootHP,endAuto;
 
 
 
     public void buildPaths() {
-        goToShoot = follower.pathBuilder()
+        goToShootPreload = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(56.000, 8.000), new Pose(61.4046, 24.4882)))
                 .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(300))
                 .build();
 
-        Path2 = follower.pathBuilder()
+        goToIntake = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(61.4046, 24.4882), new Pose(56.829, 48)))
                 .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(165))
                 .build();
 
-        Path3 = follower.pathBuilder()
+        collectArtifacts = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(41.177, 48), new Pose(5, 48)))
                 .setLinearHeadingInterpolation(Math.toRadians(165), Math.toRadians(170))
                 .build();
 
-        Path4 = follower.pathBuilder()
+        goToShoot1 = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(5, 48), new Pose(45.4046, 29.4882)))
                 .setLinearHeadingInterpolation(Math.toRadians(185), Math.toRadians(300))
                 .build();
 
-        Path5 = follower.pathBuilder()
+        goToPickupHP = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(50.4046, 20.4882), new Pose(7.706, 35.284)))
                 .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(270))
                 .build();
         //hi
 
-        Path6 = follower.pathBuilder()
+        collectArtifactsHP = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(7.706, 25.284), new Pose(7.706, 8.669)))
                 .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(270))
                 .build();
 
-        Path7 = follower.pathBuilder()
+        goToShootHP = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(7.706, 8.669), new Pose(45.4046, 29.4882)))
                 .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(300))
+                .build();
+
+        endAuto = follower.pathBuilder()
+                .addPath(new BezierLine(new Pose(45, 29), new Pose(5, 48)))
+                .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(160))
                 .build();
     }
 
@@ -83,7 +96,7 @@ public class AutonBlueWallLongRange extends OpMode {
         switch (pathState) {
             case 0:
                 // Path 1: Drive to first shooting position
-                follower.followPath(goToShoot, true);
+                follower.followPath(goToShootPreload, true);
                 setPathState(1);
                 break;
 
@@ -123,7 +136,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     // Path 2: Go to intake position
-                    follower.followPath(Path2, true);
+                    follower.followPath(goToIntake, true);
                     pathTimer.resetTimer();
                     setPathState(4);
                 }
@@ -133,7 +146,7 @@ public class AutonBlueWallLongRange extends OpMode {
                 if (!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>4) {
                     // Start intake
                     // Path 3: Drive into balls while intaking
-                    follower.followPath(Path3, true);
+                    follower.followPath(collectArtifacts, true);
                     pathTimer.resetTimer();
                     setPathState(5);
                 }
@@ -142,7 +155,7 @@ public class AutonBlueWallLongRange extends OpMode {
             case 5:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>1) {
                     // Path 4: Return to shooting position
-                    follower.followPath(Path4, true);
+                    follower.followPath(goToShoot1, true);
                     setPathState(6);
                 }
                 break;
@@ -177,7 +190,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     shooter.setVelocity(0);
 
                     // Path 5: Go to second intake position
-                    follower.followPath(Path5, true);
+                    follower.followPath(goToPickupHP, true);
                     setPathState(9);
                 }
                 break;
@@ -189,7 +202,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     intake.setPower(1);
 
                     // Path 6: Drive to pick up balls
-                    follower.followPath(Path6, true);
+                    follower.followPath(collectArtifactsHP, true);
                     setPathState(10);
                 }
                 break;
@@ -200,7 +213,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     intake.setPower(0);
 
                     // Path 7: Go to final shooting position
-                    follower.followPath(Path7, true);
+                    follower.followPath(goToShootHP, true);
                     setPathState(11);
                 }
                 break;
@@ -235,6 +248,12 @@ public class AutonBlueWallLongRange extends OpMode {
                     intake.setPower(0);
 
                     // Autonomous complete
+                    setPathState(14);
+                }
+                break;
+            case 14:
+                if(!follower.isBusy()){
+                    follower.followPath(endAuto, true);
                     setPathState(-1);
                 }
                 break;

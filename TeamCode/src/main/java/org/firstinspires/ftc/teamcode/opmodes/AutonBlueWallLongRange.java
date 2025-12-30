@@ -60,6 +60,7 @@ public class AutonBlueWallLongRange extends OpMode {
                 .addPath(new BezierLine(new Pose(50.4046, 20.4882), new Pose(7.706, 35.284)))
                 .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(270))
                 .build();
+        //hi
 
         Path6 = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(7.706, 25.284), new Pose(7.706, 8.669)))

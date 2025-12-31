@@ -61,41 +61,42 @@ public class AutonRedGoal extends OpMode {
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
-    private static final Pose PPGPose = new Pose(100, 75, Math.toRadians(10)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(134,75,Math.toRadians(10));
-    private final Pose PGPcollected = new Pose(134,50,Math.toRadians(10));
+    private static final Pose PPGPose = new Pose(100, 60, Math.toRadians(350)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PPGcollected = new Pose(134,60,Math.toRadians(350));
+    private final Pose PGPcollected = new Pose(134,45,Math.toRadians(350));
 
-    private final Pose PGPPose = new Pose(100, 50, Math.toRadians(10)); // Middle (Second Set) of Artifacts from the Spike Mark.
+    private final Pose PGPPose = new Pose(100, 35, Math.toRadians(350)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private static final Pose scorePose = new Pose(86, 100, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose2 = new Pose(86, 100, Math.toRadians(235)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose3 = new Pose(86, 100, Math.toRadians(245)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose2 = new Pose(86, 100, Math.toRadians(215)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose3 = new Pose(86, 100, Math.toRadians(205)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
     private final Pose endPose = new Pose(100, 60, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
 
     private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
 
-    public static PathChain ezBuild(Pose starting, Pose ending){
-        follower.pathBuilder()
-                .addPath(new BezierLine(starting, ending))
-                .setLinearHeadingInterpolation(starting.getHeading(), ending.getHeading())
+    private PathChain buildStraightPath(Pose start, Pose end) {
+        return follower.pathBuilder()
+                .addPath(new BezierLine(start, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
                 .build();
-        return null;
     }
     public void buildPaths() {
         /* This is our scorePreload path. BezierLine is a straight line. BezierCurve is to swoop in for intake */
         //PATHCHAIN = new Path(new BezierLine(STARTPOSE, ENDPOSE)); <-- this is the format
         //PATHCHAIN.setLinearHeadingInterpolation(STARTPOSE.getHeading(), ENDPOSE.getHeading());
 
+
+        /* Here is an example for Constant Interpolation
+        scorePreload.setConstantInterpolation(startPose.getHeading()); */
+
+
         goToShootPreload = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, scorePose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
                 .build();
-
-    /* Here is an example for Constant Interpolation
-    scorePreload.setConstantInterpolation(startPose.getHeading()); */
 
         /* This is our goToIntake PathChain. It goes to the first intake pose after scoring the three preloads*/
         goToIntake = follower.pathBuilder()
@@ -272,6 +273,7 @@ public class AutonRedGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     //end auto
+                    stop();
                     setPathState(-1);
                 }
                 break;

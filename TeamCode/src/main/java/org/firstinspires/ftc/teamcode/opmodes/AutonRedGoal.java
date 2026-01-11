@@ -37,13 +37,13 @@ public class AutonRedGoal extends OpMode {
     private CRServo right_Transfer;
 
     // ==================== CONSTANTS - TIMING ====================
-    private static final double shooterLoading = 3; // seconds for shooter to reach full speed this is essential
-    private static final double shooterDuration = 8; // seconds to shoot 3 artifacts
+    private static final double shooterLoading = 1; // seconds for shooter to reach full speed this is essential
+    private static final double shooterDuration = 4; // seconds to shoot 3 artifacts
     private static final double intakeDuration = 2; // seconds to intake a sample
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1500;
+    double targetVelocity = 1200;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -61,21 +61,22 @@ public class AutonRedGoal extends OpMode {
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
-    private static final Pose PPGPose = new Pose(100, 60, Math.toRadians(350)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(134,60,Math.toRadians(350));
-    private final Pose PGPcollected = new Pose(134,45,Math.toRadians(350));
+    private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PPGcollected = new Pose(135,65,Math.toRadians(0));
+    private final Pose PGPcollected = new Pose(140,34,Math.toRadians(0));
 
-    private final Pose PGPPose = new Pose(100, 35, Math.toRadians(350)); // Middle (Second Set) of Artifacts from the Spike Mark.
+    private final Pose PGPPose = new Pose(90, 37, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
-    private static final Pose scorePose = new Pose(86, 100, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose2 = new Pose(86, 100, Math.toRadians(215)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose3 = new Pose(86, 100, Math.toRadians(205)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private static final Pose scorePose = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose2 = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose3 = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
-    private final Pose endPose = new Pose(100, 60, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose endPose = new Pose(100, 45, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
 
-    private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
+    private Path goToShootPreload;
+    private PathChain goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
 
     private PathChain buildStraightPath(Pose start, Pose end) {
         return follower.pathBuilder()
@@ -88,15 +89,13 @@ public class AutonRedGoal extends OpMode {
         //PATHCHAIN = new Path(new BezierLine(STARTPOSE, ENDPOSE)); <-- this is the format
         //PATHCHAIN.setLinearHeadingInterpolation(STARTPOSE.getHeading(), ENDPOSE.getHeading());
 
+        goToShootPreload = new Path(new BezierLine(startPose, scorePose));
+        goToShootPreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
 
         /* Here is an example for Constant Interpolation
         scorePreload.setConstantInterpolation(startPose.getHeading()); */
 
 
-        goToShootPreload = follower.pathBuilder()
-                .addPath(new BezierLine(startPose, scorePose))
-                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
-                .build();
 
         /* This is our goToIntake PathChain. It goes to the first intake pose after scoring the three preloads*/
         goToIntake = follower.pathBuilder()
@@ -202,7 +201,7 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()) {
+                if(!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>4) {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(goToShoot1,true);
@@ -239,12 +238,12 @@ public class AutonRedGoal extends OpMode {
                     follower.followPath(collectArtifacts1,0.9,true);
                     telemetry.addLine("Done grabPickup3 path");
 
-                    setPathState(6);
+                    setPathState(94);
                 }
                 break;
             case 6:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
-                if(!follower.isBusy()) {
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>4) {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
@@ -289,53 +288,6 @@ public class AutonRedGoal extends OpMode {
         pathTimer.resetTimer();
     }
 
-//    public void autonomousPathUpdate() {
-//        switch (pathState) {
-//            case 0:
-//                follower.followPath(path1, true);
-//                setPathState(1);
-//                break;
-//
-//            case 1:
-//                if (!follower.isBusy()) {
-//                    actionTimer.resetTimer();
-//                    setPathState(-1);
-//                    //setPathState(2);
-//                }
-//                break;
-//
-//            case 2:
-//                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
-//                    shooter.setPower(0.9);
-//                }
-//                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
-//                    left_Transfer.setPower(-1);
-//                    right_Transfer.setPower(1);
-//                    intake.setPower(1);
-//                    setPathState(3);
-//                }
-//                break;
-//
-//            case 3:
-//                if (actionTimer.getElapsedTimeSeconds() > 5.5) {
-//                    left_Transfer.setPower(0);
-//                    right_Transfer.setPower(0);
-//                    shooter.setPower(0);
-//                    intake.setPower(0);
-//
-//                    follower.followPath(path2, true);
-//                    setPathState(4);
-//                }
-//                break;
-//
-//            case 4:
-//                if (!follower.isBusy()) {
-//                    setPathState(-1);
-//                }
-//                break;
-//
-//        }
-//    }
 
 
 
@@ -352,7 +304,7 @@ public class AutonRedGoal extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(0.5);
+        follower.setMaxPower(0.75);
 
         try {
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
@@ -383,7 +335,14 @@ public class AutonRedGoal extends OpMode {
 
     /** This method is called continuously after Init while waiting for "play". **/
     @Override
-    public void init_loop() {}
+    public void init_loop() {
+        follower.update();
+
+        telemetry.addData("Status", "Ready");
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Expected", "225°");
+        telemetry.update();
+    }
 
     /** This method is called once at the start of the OpMode.
      * It runs all the setup actions, including building paths and starting the path system **/

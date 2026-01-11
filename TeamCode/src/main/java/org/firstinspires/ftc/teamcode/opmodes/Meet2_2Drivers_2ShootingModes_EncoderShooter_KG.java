@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.opmodes;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -7,25 +7,22 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
-@TeleOp(name = "Meet2_2Drivers_2ShootingModes_KG")
+@TeleOp(name = "Meet2_2Drivers_2ShootingModes_Android Studio")
 public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMode {
-
-    private DcMotor RF, LF, RB, LB;
-    private DcMotor intake;
-    private DcMotorEx shooter;
-
-    private CRServo right_Transfer;
-    private CRServo left_Transfer;
 
     // Shooter mode target velocity
     double targetVelocity = 0;
 
     // Preset shooter velocities (ticks/sec)
-    final double LONG_RANGE_VELOCITY  = 1600;
-    final double SHORT_RANGE_VELOCITY = 1300;
+    final double LONG_RANGE_VELOCITY  = 1800;
+    final double SHORT_RANGE_VELOCITY = 1475;
 
     final double NOMINAL_VOLTAGE = 12.0;
+    double P;
+    double F;
 
     String shooterMode = "OFF";
 
@@ -33,10 +30,10 @@ public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMod
     public void runOpMode() throws InterruptedException {
 
         // ---- DRIVE MOTORS ----
-        RF = hardwareMap.get(DcMotor.class, "RF");
-        LF = hardwareMap.get(DcMotor.class, "LF");
-        RB = hardwareMap.get(DcMotor.class, "RB");
-        LB = hardwareMap.get(DcMotor.class, "LB");
+        DcMotor RF = hardwareMap.get(DcMotor.class, "RF");
+        DcMotor LF = hardwareMap.get(DcMotor.class, "LF");
+        DcMotor RB = hardwareMap.get(DcMotor.class, "RB");
+        DcMotor LB = hardwareMap.get(DcMotor.class, "LB");
 
         LF.setDirection(DcMotorSimple.Direction.FORWARD);
         LB.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -44,15 +41,17 @@ public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMod
         RB.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // ---- OTHER HARDWARE ----
-        intake = hardwareMap.get(DcMotor.class, "Intake");
-        left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
-        right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
+        DcMotor intake = hardwareMap.get(DcMotor.class, "Intake");
+        CRServo left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
+        CRServo right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
 
         // ---- SHOOTER (ENCODER + VELOCITY MODE) ----
-        shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
+        DcMotorEx shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
         shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+        PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P,0,0,F);
+        shooter.setPIDFCoefficients(DcMotorEx.RunMode.RUN_USING_ENCODER, pidfCoefficients);
 
         waitForStart();
 
@@ -89,7 +88,7 @@ public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMod
             if (gamepad2.left_trigger > 0.3) {
                 intake.setDirection(DcMotorSimple.Direction.FORWARD);
                 intake.setPower(1);
-            } else if (!gamepad2.circle && !gamepad2.square) {
+            } else if (gamepad2.left_trigger < 0.3 && !gamepad2.circle && !gamepad2.square) {
                 intake.setPower(0);
             }
 
@@ -126,6 +125,22 @@ public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMod
 
             double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
             double voltageComp = NOMINAL_VOLTAGE / voltage;
+            double compensated = targetVelocity * voltageComp;
+
+            if(gamepad1.dpadUpWasPressed()) {
+                if(targetVelocity == LONG_RANGE_VELOCITY){
+                    targetVelocity = SHORT_RANGE_VELOCITY;
+                    P = 20.303;
+                    F = 21.91;
+                    shooter.setVelocity(compensated);
+                }
+                if(gamepad1.dpad_down) {
+                    targetVelocity = LONG_RANGE_VELOCITY;
+                    P=137.41;
+                    F=270.2;
+                    shooter.setVelocity(compensated);
+                }
+            }
 
             // Select mode
             if (gamepad2.dpad_up) {
@@ -142,7 +157,6 @@ public class Meet2_2Drivers_2ShootingModes_EncoderShooter_KG extends LinearOpMod
 
             // Run shooter when trigger is held
             if (gamepad2.right_trigger > 0.3) {
-                double compensated = targetVelocity * voltageComp;
                 shooter.setDirection(DcMotorSimple.Direction.FORWARD);
                 shooter.setVelocity(compensated);
 

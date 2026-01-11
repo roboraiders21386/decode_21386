@@ -47,7 +47,7 @@ public class AutonBlueWallLongRange extends OpMode {
     public void buildPaths() {
         goToShootPreload = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(56, 8), new Pose(61, 24)))
-                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(300))
+                .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(290))
                 .build();
 
         goToIntake = follower.pathBuilder()
@@ -61,12 +61,12 @@ public class AutonBlueWallLongRange extends OpMode {
                 .build();
 
         goToShoot1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(5, 48), new Pose(45.4046, 29.4882)))
+                .addPath(new BezierLine(new Pose(5, 48), new Pose(50, 24)))
                 .setLinearHeadingInterpolation(Math.toRadians(185), Math.toRadians(300))
                 .build();
 
         goToPickupHP = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(50.4046, 20.4882), new Pose(7.706, 35.284)))
+                .addPath(new BezierLine(new Pose(50, 24), new Pose(7.706, 35.284)))
                 .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(270))
                 .build();
         //hi
@@ -125,13 +125,14 @@ public class AutonBlueWallLongRange extends OpMode {
 
             case 3:
                 // Shoot for 4 seconds (7 total)
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 6.0) {
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 3.0) {
                     // Stop shooting
                     //left_Transfer.setPower(0);
                     //right_Transfer.setPower(0);
                     pathTimer.resetTimer();
                     setPathState(563);
                 }
+                break;
             case 563:
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>3) {
                     left_Transfer.setPower(0);
@@ -285,7 +286,7 @@ public class AutonBlueWallLongRange extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(new Pose(56.000, 8.000, Math.toRadians(270)));
-        follower.setMaxPower(0.5);
+        follower.setMaxPower(0.75);
         pathState = 0;
 
         // Initialize hardware

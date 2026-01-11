@@ -24,6 +24,12 @@ import com.pedropathing.telemetry.SelectableOpMode;
 import com.pedropathing.util.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +79,9 @@ public class Tuning extends SelectableOpMode {
                 p.add("Line", Line::new);
                 p.add("Triangle", Triangle::new);
                 p.add("Circle", Circle::new);
+            });
+            s.folder("TX-RX Created", j ->{
+                j.add("Shooter Velocity Tuner", VelocityTuner::new);
             });
         });
     }
@@ -1209,6 +1218,100 @@ class Circle extends OpMode {
         if (follower.atParametricEnd()) {
             follower.followPath(circle);
         }
+    }
+}
+
+/**
+ * This is the Velocity Tuner class. It allows the P and F coefficients be edited to provide maximum efficiency of the shooter
+ * @author Aditi Aryamane - 21386 Tx-Rx
+ * @version 1.1, 1/2/2026
+ */
+
+
+class VelocityTuner extends OpMode{
+    public DcMotorEx shooter;
+    public DcMotor intake;
+    public CRServo left_Transfer;
+    public CRServo right_Transfer;
+    public double lowVelocity = 1300;
+    public double highVelocity = 1600;
+    double targetVelocity = highVelocity;
+    double F = 0;
+    double P = 0;
+
+    double[] stepSizes = {10.0,1.0,0.1,0.001,0.0001};
+    int stepIndex = 1;
+
+    @Override
+    public void init() {
+        shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
+        shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P,0,0,F);
+        shooter.setPIDFCoefficients(DcMotorEx.RunMode.RUN_USING_ENCODER, pidfCoefficients);
+        telemetry.addLine("initialized!");
+    }
+
+    @Override
+    public void loop() {
+        //get all gamepad commands
+        //set target velocity
+        //update telemetry
+
+        if(gamepad1.triangleWasPressed()){
+            if(targetVelocity == highVelocity){
+                targetVelocity = lowVelocity;
+                P = 20.303;
+                F = 21.91;
+
+                shooter.setVelocity(targetVelocity);
+            } else {
+                targetVelocity = highVelocity;
+                P=137.41;
+                F=270.2;
+                shooter.setVelocity(targetVelocity);
+            }
+        }
+
+        if(gamepad1.crossWasPressed()){
+            stepIndex = (stepIndex+1) % stepSizes.length;
+        }
+        if(gamepad1.squareWasPressed()){
+            shooter.setVelocity(0);
+        }
+
+        if(gamepad1.dpadLeftWasPressed()){
+            F += stepSizes[stepIndex];
+        }
+        if(gamepad1.dpadRightWasPressed()){
+            F-=stepSizes[stepIndex];
+        }
+        if(gamepad1.dpadUpWasPressed()){
+            P += stepSizes[stepIndex];
+        }
+        if(gamepad1.dpadDownWasPressed()){
+            P -= stepSizes[stepIndex];
+        }
+
+        //set new pidf coeffs
+        PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P,0,0,F);
+        shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
+
+        //set velocity too
+        shooter.setVelocity(targetVelocity);
+
+        double currentVelocity = shooter.getVelocity();
+        double error = targetVelocity-currentVelocity;
+
+        telemetry.addData("Target Velocity", targetVelocity);
+        telemetry.addData("Current Velocity", currentVelocity);
+        telemetry.addData("Error", error);
+        telemetry.addLine("-----------------------------");
+        telemetry.addData("Tuning P","%.4f (D-Pad up/down)", P);
+        telemetry.addData("Tuning F","%.4f (D-Pad left/right)", F);
+        telemetry.addData("Step Size", stepSizes[stepIndex]);
+        telemetry.update();
+
     }
 }
 

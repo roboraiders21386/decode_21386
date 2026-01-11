@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "do not use - BWL", group = "Autonomous")
+@Autonomous(name = "Blue Wall Leave", group = "LEAVE Autos")
 public class BlueWall_LEAVE extends OpMode {
 
     private Follower follower;

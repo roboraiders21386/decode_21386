@@ -62,7 +62,7 @@ public class AutonRedGoal extends OpMode {
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
     private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(135,65,Math.toRadians(0));
+    private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
     private final Pose PGPcollected = new Pose(140,34,Math.toRadians(0));
 
     private final Pose PGPPose = new Pose(90, 37, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
@@ -75,8 +75,7 @@ public class AutonRedGoal extends OpMode {
     private final Pose endPose = new Pose(100, 45, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
 
-    private Path goToShootPreload;
-    private PathChain goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
+    private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
 
     private PathChain buildStraightPath(Pose start, Pose end) {
         return follower.pathBuilder()
@@ -89,8 +88,10 @@ public class AutonRedGoal extends OpMode {
         //PATHCHAIN = new Path(new BezierLine(STARTPOSE, ENDPOSE)); <-- this is the format
         //PATHCHAIN.setLinearHeadingInterpolation(STARTPOSE.getHeading(), ENDPOSE.getHeading());
 
-        goToShootPreload = new Path(new BezierLine(startPose, scorePose));
-        goToShootPreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
+        goToShootPreload = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, scorePose))
+                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
+                .build();
 
         /* Here is an example for Constant Interpolation
         scorePreload.setConstantInterpolation(startPose.getHeading()); */
@@ -149,7 +150,7 @@ public class AutonRedGoal extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload, true);
+                follower.followPath(goToShootPreload,0.5, true);
                 setPathState(34);
                 break;
 

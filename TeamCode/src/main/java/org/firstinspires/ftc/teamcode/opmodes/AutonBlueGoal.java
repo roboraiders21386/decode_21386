@@ -43,7 +43,7 @@ public class AutonBlueGoal extends OpMode {
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1200;
+    double targetVelocity = 1150;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -61,30 +61,31 @@ public class AutonBlueGoal extends OpMode {
 
     private final Pose startPose = new Pose(24, 134, Math.toRadians(315)); // Start Pose of our robot.
     // Initialize poses
-    private final Pose PPGPose = new Pose(55, 85, Math.toRadians(160)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(15,85,Math.toRadians(160));
-    private final Pose PGPcollected = new Pose(15,53,Math.toRadians(190));
+    private final Pose PPGPose = new Pose(55, 85, Math.toRadians(175)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PPGcollected = new Pose(20,85,Math.toRadians(175));
+    private final Pose PGPcollected = new Pose(20,53,Math.toRadians(190));
 
     private final Pose PGPPose = new Pose(55, 58, Math.toRadians(160)); // Middle (Second Set) of Artifacts from the Spike Mark.
 
-    private final Pose scorePose = new Pose(75, 80, Math.toRadians(320)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose2 = new Pose(72, 87, Math.toRadians(320)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose3 = new Pose(72, 87, Math.toRadians(320)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose = new Pose(70, 87, Math.toRadians(315)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose2 = new Pose(65, 87, Math.toRadians(320)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose3 = new Pose(65, 87, Math.toRadians(315)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
 
     private final Pose endPose = new Pose(48, 60, Math.toRadians(160)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
 
-    private Path goToShootPreload;
-    private PathChain goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
+    private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
 
     public void buildPaths() {
         /* This is our scorePreload path. We are using a BezierLine, which is a straight line. */
         //scorePreload = new Path(new BezierLine(startPose, scorePose));
         //scorePreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
 
-        goToShootPreload = new Path(new BezierLine(startPose, scorePose));
-        goToShootPreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
+        goToShootPreload = follower.pathBuilder()
+                .addPath(new BezierLine(startPose, scorePose))
+                .setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading())
+                .build();
 
     /* Here is an example for Constant Interpolation
     scorePreload.setConstantInterpolation(startPose.getHeading()); */
@@ -132,23 +133,25 @@ public class AutonBlueGoal extends OpMode {
                 .build();
     }
 
-    private double getVoltageCompensatedVelocity() {
+  /*  private double getVoltageCompensatedVelocity() {
         double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
         double voltageComp = NOMINAL_VOLTAGE / voltage;
         return targetVelocity * voltageComp;
     }
 
+   */
+
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload, true);
+                follower.followPath(goToShootPreload, 0.5,true);
                 setPathState(34);
                 break;
 
             case 34:
                 if(!follower.isBusy()) {
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setVelocity(getVoltageCompensatedVelocity());
+                    shooter.setVelocity(targetVelocity-100);
                     setPathState(20);
                 }
                 break;
@@ -174,7 +177,7 @@ public class AutonBlueGoal extends OpMode {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(goToIntake,true);
+                    follower.followPath(goToIntake,0.5,true);
                     telemetry.addLine("Done grabPickup1 path");
                     pathTimer.resetTimer();
                     setPathState(2);
@@ -185,7 +188,7 @@ public class AutonBlueGoal extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>intakeDuration) {
                     /* Grab artifacts */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(collectArtifacts,0.9,true);
+                    follower.followPath(collectArtifacts,0.5,true);
                     telemetry.addLine("Done collecting artifacts");
                     pathTimer.resetTimer();
                     setPathState(3);
@@ -197,6 +200,7 @@ public class AutonBlueGoal extends OpMode {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(goToShoot1,true);
+                    shooter.setVelocity(targetVelocity);
                     telemetry.addLine("Done shooting pickups");
                     pathTimer.resetTimer();
                     setPathState(492);
@@ -227,10 +231,10 @@ public class AutonBlueGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(collectArtifacts1,true);
+                    follower.followPath(collectArtifacts1,0.5,true);
                     telemetry.addLine("Done grabPickup3 path");
 
-                    setPathState(6);
+                    setPathState(94);
                 }
                 break;
             case 6:
@@ -264,6 +268,7 @@ public class AutonBlueGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     //end auto
+                    stop();
                     setPathState(-1);
                 }
                 break;
@@ -279,53 +284,6 @@ public class AutonBlueGoal extends OpMode {
         pathTimer.resetTimer();
     }
 
-//    public void autonomousPathUpdate() {
-//        switch (pathState) {
-//            case 0:
-//                follower.followPath(path1, true);
-//                setPathState(1);
-//                break;
-//
-//            case 1:
-//                if (!follower.isBusy()) {
-//                    actionTimer.resetTimer();
-//                    setPathState(-1);
-//                    //setPathState(2);
-//                }
-//                break;
-//
-//            case 2:
-//                if (actionTimer.getElapsedTimeSeconds() > 0.1) {
-//                    shooter.setPower(0.9);
-//                }
-//                if (actionTimer.getElapsedTimeSeconds() > 1.5) {
-//                    left_Transfer.setPower(-1);
-//                    right_Transfer.setPower(1);
-//                    intake.setPower(1);
-//                    setPathState(3);
-//                }
-//                break;
-//
-//            case 3:
-//                if (actionTimer.getElapsedTimeSeconds() > 5.5) {
-//                    left_Transfer.setPower(0);
-//                    right_Transfer.setPower(0);
-//                    shooter.setPower(0);
-//                    intake.setPower(0);
-//
-//                    follower.followPath(path2, true);
-//                    setPathState(4);
-//                }
-//                break;
-//
-//            case 4:
-//                if (!follower.isBusy()) {
-//                    setPathState(-1);
-//                }
-//                break;
-//
-//        }
-//    }
 
 
 
@@ -342,7 +300,7 @@ public class AutonBlueGoal extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(1);
+        follower.setMaxPower(0.5);
 
         try {
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
@@ -373,7 +331,14 @@ public class AutonBlueGoal extends OpMode {
 
     /** This method is called continuously after Init while waiting for "play". **/
     @Override
-    public void init_loop() {}
+    public void init_loop() {
+        follower.update();
+
+        telemetry.addData("Status", "Ready");
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Expected", "315°");
+        telemetry.update();
+    }
 
     /** This method is called once at the start of the OpMode.
      * It runs all the setup actions, including building paths and starting the path system **/
@@ -424,7 +389,6 @@ public class AutonBlueGoal extends OpMode {
         telemetry.addData("x", follower.getPose().getX());
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
         telemetry.addData("Path Timer", "%.1f sec", pathTimer.getElapsedTimeSeconds());
         telemetry.addData("Shooter Power", shooter.getPower());
@@ -445,7 +409,7 @@ public class AutonBlueGoal extends OpMode {
     }
     private void ShooterSpeed() {
         double currentVelocity = shooter.getVelocity();
-        double targetVelocity = getVoltageCompensatedVelocity();
+        //double targetVelocity = getVoltageCompensatedVelocity();
         telemetry.addData("Shooter Speed: ", (Math.abs(currentVelocity - targetVelocity)));
         telemetry.update();
     }

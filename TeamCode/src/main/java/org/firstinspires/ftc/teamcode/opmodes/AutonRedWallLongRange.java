@@ -271,6 +271,18 @@ public class AutonRedWallLongRange extends OpMode {
         telemetry.addData("Target Velocity", LONG_RANGE_VELOCITY);
         telemetry.update();
     }
+
+    /** This method is called continuously after Init while waiting for "play". **/
+    @Override
+    public void init_loop() {
+        follower.update();
+
+        telemetry.addData("Status", "Ready");
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Expected", "270°");
+        telemetry.update();
+    }
+
     @Override
     public void start() {
         opmodeTimer.resetTimer();

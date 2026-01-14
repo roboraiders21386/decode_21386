@@ -43,7 +43,7 @@ public class AutonBlueGoal extends OpMode {
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1150;
+    double targetVelocity = 1350;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -62,8 +62,8 @@ public class AutonBlueGoal extends OpMode {
     private final Pose startPose = new Pose(24, 134, Math.toRadians(315)); // Start Pose of our robot.
     // Initialize poses
     private final Pose PPGPose = new Pose(55, 85, Math.toRadians(175)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(20,85,Math.toRadians(175));
-    private final Pose PGPcollected = new Pose(20,53,Math.toRadians(190));
+    private final Pose PPGcollected = new Pose(10,85,Math.toRadians(175));
+    private final Pose PGPcollected = new Pose(5,53,Math.toRadians(190));
 
     private final Pose PGPPose = new Pose(55, 58, Math.toRadians(160)); // Middle (Second Set) of Artifacts from the Spike Mark.
 
@@ -144,7 +144,7 @@ public class AutonBlueGoal extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload, 0.5,true);
+                follower.followPath(goToShootPreload,0.5,true);
                 setPathState(34);
                 break;
 
@@ -177,7 +177,7 @@ public class AutonBlueGoal extends OpMode {
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(goToIntake,0.5,true);
+                    follower.followPath(goToIntake,true);
                     telemetry.addLine("Done grabPickup1 path");
                     pathTimer.resetTimer();
                     setPathState(2);
@@ -188,7 +188,7 @@ public class AutonBlueGoal extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>intakeDuration) {
                     /* Grab artifacts */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(collectArtifacts,0.5,true);
+                    follower.followPath(collectArtifacts,1,true);
                     telemetry.addLine("Done collecting artifacts");
                     pathTimer.resetTimer();
                     setPathState(3);
@@ -200,13 +200,13 @@ public class AutonBlueGoal extends OpMode {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(goToShoot1,true);
-                    shooter.setVelocity(targetVelocity);
+                    shooter.setVelocity(targetVelocity-50);
                     telemetry.addLine("Done shooting pickups");
                     pathTimer.resetTimer();
                     setPathState(492);
                 }
                 break;
-            case 492:
+            case 49:
                 if(!follower.isBusy()){
                     intake.setPower(1);
                     left_Transfer.setPower(1);
@@ -231,7 +231,7 @@ public class AutonBlueGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(collectArtifacts1,0.5,true);
+                    follower.followPath(collectArtifacts1,1,true);
                     telemetry.addLine("Done grabPickup3 path");
 
                     setPathState(94);
@@ -300,7 +300,7 @@ public class AutonBlueGoal extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(0.5);
+        follower.setMaxPower(0.75);
 
         try {
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");

@@ -61,12 +61,12 @@ public class AutonBlueWallLongRange extends OpMode {
                 .build();
 
         goToShoot1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(5, 48), new Pose(61, 24)))
+                .addPath(new BezierLine(new Pose(5, 48), new Pose(58, 24)))
                 .setLinearHeadingInterpolation(Math.toRadians(185), Math.toRadians(300))
                 .build();
 
         goToPickupHP = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(61, 24), new Pose(7.706, 35.284)))
+                .addPath(new BezierLine(new Pose(58, 24), new Pose(7.706, 35.284)))
                 .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(270))
                 .build();
         //hi
@@ -148,7 +148,7 @@ public class AutonBlueWallLongRange extends OpMode {
                 if (!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>1) {
                     // Start intake
                     // Path 3: Drive into balls while intaking
-                    follower.followPath(collectArtifacts, 0.9,true);
+                    follower.followPath(collectArtifacts, 1,true);
                     pathTimer.resetTimer();
                     setPathState(5);
                 }
@@ -205,7 +205,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     intake.setPower(1);
 
                     // Path 6: Drive to pick up balls
-                    follower.followPath(collectArtifactsHP, true);
+                    follower.followPath(collectArtifactsHP, 1,true);
                     setPathState(10);
                 }
                 break;
@@ -319,7 +319,7 @@ public class AutonBlueWallLongRange extends OpMode {
 
         telemetry.addData("Status", "Ready");
         telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
-        telemetry.addData("Expected", "315°");
+        telemetry.addData("Expected", "270°");
         telemetry.update();
     }
 

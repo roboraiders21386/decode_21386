@@ -37,13 +37,13 @@ public class AutonRedGoal extends OpMode {
     private CRServo right_Transfer;
 
     // ==================== CONSTANTS - TIMING ====================
-    private static final double shooterLoading = 1; // seconds for shooter to reach full speed this is essential
+    private static final double shooterLoading = 3; // seconds for shooter to reach full speed this is essential
     private static final double shooterDuration = 4; // seconds to shoot 3 artifacts
     private static final double intakeDuration = 2; // seconds to intake a sample
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1200;
+    double targetVelocity = 1350;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -63,7 +63,7 @@ public class AutonRedGoal extends OpMode {
     // Initialize poses
     private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
-    private final Pose PGPcollected = new Pose(140,34,Math.toRadians(0));
+    private final Pose PGPcollected = new Pose(135,34,Math.toRadians(0));
 
     private final Pose PGPPose = new Pose(90, 37, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
@@ -305,7 +305,7 @@ public class AutonRedGoal extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(0.75);
+        follower.setMaxPower(0.65);
 
         try {
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");

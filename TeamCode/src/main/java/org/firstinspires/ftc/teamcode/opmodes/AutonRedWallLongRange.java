@@ -25,7 +25,7 @@ public class AutonRedWallLongRange extends OpMode {
     private CRServo right_Transfer;
     private Servo hood;
     // Shooter settings
-    private final double LONG_RANGE_VELOCITY = 1660;
+    private final double LONG_RANGE_VELOCITY = 1700;
     private final double NOMINAL_VOLTAGE = 12.0;
     // Paths
     private final Pose startPose = new Pose(87.652, 8, Math.toRadians(270)); // Start Pose of our robot.
@@ -49,11 +49,11 @@ public class AutonRedWallLongRange extends OpMode {
                 .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
                 .build();
         goToShoot1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(137, 40), new Pose(84, 24)))
+                .addPath(new BezierLine(new Pose(137, 40), new Pose(85.5, 24)))
                 .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(245))
                 .build();
         goToPickupHP = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(84, 24), new Pose(130, 40)))
+                .addPath(new BezierLine(new Pose(85.5, 24), new Pose(130, 40)))
                 .setLinearHeadingInterpolation(Math.toRadians(245), Math.toRadians(315))
                 .build();
         collectArtifactsHP = follower.pathBuilder()
@@ -116,7 +116,7 @@ public class AutonRedWallLongRange extends OpMode {
                 if (!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>2) {
                     // Start intake
                     // Path 3: Drive into balls while intaking
-                    follower.followPath(collectArtifacts,true);
+                    follower.followPath(collectArtifacts,0.5,true);
                     pathTimer.resetTimer();
                     setPathState(5);
                 }
@@ -172,7 +172,7 @@ public class AutonRedWallLongRange extends OpMode {
                     intake.setDirection(DcMotorSimple.Direction.FORWARD);
                     intake.setPower(1);
                     // Path 6: Drive to pick up balls
-                    follower.followPath(collectArtifactsHP, true);
+                    follower.followPath(collectArtifactsHP,0.5, true);
                     setPathState(10);
                 }
                 break;

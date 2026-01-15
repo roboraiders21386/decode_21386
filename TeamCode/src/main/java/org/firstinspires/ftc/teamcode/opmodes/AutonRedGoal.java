@@ -55,9 +55,6 @@ public class AutonRedGoal extends OpMode {
 
     double sp = 0.6;
 
-//    private final Pose startPose = new Pose(24.000, 127.000, Math.toRadians(317));
-//    private final Pose scorePose = new Pose(55.000, 87.000, Math.toRadians(307));
-//    private final Pose intakePose = new Pose(48.000, 60.000, Math.toRadians(90));
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
@@ -82,7 +79,8 @@ public class AutonRedGoal extends OpMode {
                 .addPath(new BezierLine(start, end))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
                 .build();
-    }
+    } //unused function
+
     public void buildPaths() {
         /* This is our scorePreload path. BezierLine is a straight line. BezierCurve is to swoop in for intake */
         //PATHCHAIN = new Path(new BezierLine(STARTPOSE, ENDPOSE)); <-- this is the format
@@ -194,7 +192,7 @@ public class AutonRedGoal extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>intakeDuration) {
                     /* Grab artifacts */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(collectArtifacts,0.9,true);
+                    follower.followPath(collectArtifacts,1,true);
                     telemetry.addLine("Done collecting artifacts");
                     pathTimer.resetTimer();
                     setPathState(3);
@@ -202,10 +200,11 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>4) {
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>4) {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(goToShoot1,true);
+                    shooter.setVelocity(getVoltageCompensatedVelocity());
                     telemetry.addLine("Done shooting pickups");
                     pathTimer.resetTimer();
                     setPathState(492);
@@ -236,7 +235,7 @@ public class AutonRedGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(collectArtifacts1,0.9,true);
+                    follower.followPath(collectArtifacts1,1,true);
                     telemetry.addLine("Done grabPickup3 path");
 
                     setPathState(94);

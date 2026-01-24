@@ -39,11 +39,11 @@ public class AutonRedGoal extends OpMode {
     // ==================== CONSTANTS - TIMING ====================
     private static final double shooterLoading = 3; // seconds for shooter to reach full speed this is essential
     private static final double shooterDuration = 4; // seconds to shoot 3 artifacts
-    private static final double intakeDuration = 2; // seconds to intake a sample
+    private static final double intakeDuration = 1; // seconds to intake a sample
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1350;
+    double targetVelocity = 1150;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -58,15 +58,15 @@ public class AutonRedGoal extends OpMode {
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
-    private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
-    private final Pose PGPcollected = new Pose(135,34,Math.toRadians(0));
+    private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(6)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PPGcollected = new Pose(134,65,Math.toRadians(6));
+    private final Pose PGPcollected = new Pose(142,34,Math.toRadians(6));
 
-    private final Pose PGPPose = new Pose(90, 37, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
+    private final Pose PGPPose = new Pose(90, 37, Math.toRadians(5)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private static final Pose scorePose = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose2 = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose2 = new Pose(80, 87, Math.toRadians(220)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose scorePose3 = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
     private final Pose endPose = new Pose(100, 45, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
@@ -161,10 +161,16 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 20:
                 if(!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>shooterLoading) {
-                    intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);
                     pathTimer.resetTimer();
+                    setPathState(178);
+                }
+                break;
+            case 178:
+                if(pathTimer.getElapsedTimeSeconds()>0.00001){
+                    shooter.setVelocity(getVoltageCompensatedVelocity()+20);
+                    intake.setPower(1);
                     setPathState(1);
                 }
                 break;
@@ -192,7 +198,7 @@ public class AutonRedGoal extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>intakeDuration) {
                     /* Grab artifacts */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(collectArtifacts,1,true);
+                    follower.followPath(collectArtifacts,0.245,true);
                     telemetry.addLine("Done collecting artifacts");
                     pathTimer.resetTimer();
                     setPathState(3);
@@ -200,7 +206,7 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>4) {
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>0.5) {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(goToShoot1,true);
@@ -235,7 +241,7 @@ public class AutonRedGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(collectArtifacts1,1,true);
+                    follower.followPath(collectArtifacts1,0.35,true);
                     telemetry.addLine("Done grabPickup3 path");
 
                     setPathState(94);

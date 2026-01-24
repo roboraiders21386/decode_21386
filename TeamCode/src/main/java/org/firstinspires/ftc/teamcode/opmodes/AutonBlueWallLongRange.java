@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -29,7 +30,7 @@ public class AutonBlueWallLongRange extends OpMode {
     private CRServo right_Transfer;
 
     // Shooter settings
-    private final double LONG_RANGE_VELOCITY = 1695;
+    private final double LONG_RANGE_VELOCITY = 1600;
     private final double NOMINAL_VOLTAGE = 12.0;
 
 
@@ -39,7 +40,7 @@ public class AutonBlueWallLongRange extends OpMode {
 
     public void buildPaths() {
         goToShootPreload = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(56, 8), new Pose(61, 24)))
+                .addPath(new BezierLine(new Pose(53, 8), new Pose(61 , 24)))
                 .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(300))
                 .build();
 
@@ -49,7 +50,7 @@ public class AutonBlueWallLongRange extends OpMode {
                 .build();
 
         collectArtifacts = follower.pathBuilder()
-                .addPath(new BezierCurve(new Pose(41.177, 48), new Pose(9, 48))) //bezier line before
+                .addPath(new BezierCurve(new Pose(41.177, 48), new Pose(20, 48))) //bezier line before
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(175))
                 .build();
 
@@ -60,9 +61,8 @@ public class AutonBlueWallLongRange extends OpMode {
 
         goToPickupHP = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(58, 24), new Pose(7.706, 35.284)))
-                .setLinearHeadingInterpolation(Math.toRadians(300), Math.toRadians(270))
+                .setLinearHeadingInterpolation(Math.toRadians(280), Math.toRadians(270))
                 .build();
-        //hi
 
         collectArtifactsHP = follower.pathBuilder()
                 .addPath(new BezierLine(new Pose(7.706, 25.284), new Pose(7.706, 8.669)))
@@ -105,8 +105,8 @@ public class AutonBlueWallLongRange extends OpMode {
                 break;
 
             case 2:
-                // Wait 3 seconds for shooter to reach velocity
-                if (pathTimer.getElapsedTimeSeconds() > 6) {
+                // Wait 1 second for shooter to reach velocity
+                if (pathTimer.getElapsedTimeSeconds() > 4) {
                     // Start transfer + intake to shoot
                     intake.setPower(1);
                     left_Transfer.setPower(1);
@@ -118,7 +118,7 @@ public class AutonBlueWallLongRange extends OpMode {
 
             case 3:
                 // Shoot for 4 seconds (7 total)
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 3.0) {
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 5.0) {
                     // Stop shooting
                     //left_Transfer.setPower(0);
                     //right_Transfer.setPower(0);
@@ -141,17 +141,17 @@ public class AutonBlueWallLongRange extends OpMode {
                 if (!follower.isBusy()&& pathTimer.getElapsedTimeSeconds()>1) {
                     // Start intake
                     // Path 3: Drive into balls while intaking
-                    follower.followPath(collectArtifacts, 0.8,true);
+                    follower.followPath(collectArtifacts, 0.3,true);
                     pathTimer.resetTimer();
                     setPathState(5);
                 }
                 break;
 
             case 5:
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>5) {
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>1) {
                     // Path 4: Return to shooting position
                     follower.followPath(goToShoot1, true);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-50);
+                    shooter.setVelocity(getVoltageCompensatedVelocity()-75);
                     setPathState(6);
                 }
                 break;
@@ -168,18 +168,19 @@ public class AutonBlueWallLongRange extends OpMode {
 
             case 7:
                 // Wait 3 seconds for shooter
-                if (actionTimer.getElapsedTimeSeconds() > 3.0) {
+                if (actionTimer.getElapsedTimeSeconds() > 2.0) {
                     // Start transfer to shoot
                     intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);
+                    actionTimer.resetTimer();
                     setPathState(8);
                 }
                 break;
 
             case 8:
                 // Shoot for 4 seconds
-                if (actionTimer.getElapsedTimeSeconds() > 7.0) {
+                if (actionTimer.getElapsedTimeSeconds() > 5.0) {
                     // Stop shooting
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
@@ -198,7 +199,7 @@ public class AutonBlueWallLongRange extends OpMode {
                     intake.setPower(1);
 
                     // Path 6: Drive to pick up balls
-                    follower.followPath(collectArtifactsHP, 0.8,true);
+                    follower.followPath(collectArtifactsHP, 0.3,true);
                     setPathState(10);
                 }
                 break;
@@ -282,6 +283,7 @@ public class AutonBlueWallLongRange extends OpMode {
         follower.setStartingPose(new Pose(56.000, 8.000, Math.toRadians(270)));
         follower.setMaxPower(0.75);
         pathState = 0;
+
 
         // Initialize hardware
         try {

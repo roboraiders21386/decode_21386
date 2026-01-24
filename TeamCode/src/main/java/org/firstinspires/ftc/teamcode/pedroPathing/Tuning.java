@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.changes;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawOnlyCurrent;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.draw;
@@ -30,6 +32,9 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +86,8 @@ public class Tuning extends SelectableOpMode {
                 p.add("Circle", Circle::new);
             });
             s.folder("TX-RX Created", j ->{
-                j.add("Shooter Velocity Tuner", VelocityTuner::new);
+                j.add("Shooter PIDF Tuner", VelocityTuner::new);
+                j.add("Shooter Velocity Tuner", ShooterTuner::new);
             });
         });
     }
@@ -1313,8 +1319,70 @@ class VelocityTuner extends OpMode{
         telemetry.update();
 
     }
-}
 
+    }
+
+
+class ShooterTuner extends OpMode{
+    DcMotorEx shooter;
+    Servo hood;
+    DcMotor intake;
+    CRServo leftT;
+    CRServo rightT;
+    double F = 12.1;
+    double P = 14.3;
+    @Override
+    public void init(){
+
+        shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
+        intake = hardwareMap.get(DcMotor.class, "Intake");
+        hood = hardwareMap.get(Servo.class,"hood");
+        leftT = hardwareMap.get(CRServo.class,"Left Transfer");
+        rightT = hardwareMap.get(CRServo.class,"Right Transfer");
+        shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P,0,0,F);
+        shooter.setPIDFCoefficients(DcMotorEx.RunMode.RUN_USING_ENCODER, pidfCoefficients);
+        telemetry.addLine("initialized!");
+
+    }
+    @Override
+    public void loop(){
+        if(gamepad1.triangleWasPressed()){
+            intake.setPower(1);
+        }
+        if(gamepad1.circleWasPressed()){
+            leftT.setPower(1);
+            rightT.setPower(-1);
+        }
+        if(gamepad1.dpadUpWasPressed()){
+            shooter.setVelocity(shooter.getVelocity()+50);
+        }
+        if(gamepad1.dpadDownWasPressed()){
+            shooter.setVelocity(shooter.getVelocity()-50);
+        }
+
+        if(gamepad1.dpadLeftWasPressed()){
+            hood.setPosition(hood.getPosition()-0.01);
+        }
+        if(gamepad1.dpadRightWasPressed()){
+            hood.setPosition(hood.getPosition()+0.01);
+        }
+        if(gamepad1.crossWasPressed()){
+            leftT.setPower(0);
+            rightT.setPower(0);
+            shooter.setVelocity(0);
+            intake.setPower(0);
+        }
+
+        telemetry.addLine("DPAD UP/DOWN to increment shooter velocity");
+        telemetry.addLine("DPAD LEFT/RIGHT to increment hood position");
+        telemetry.addLine("triangle to start intake");
+        telemetry.addLine("circle to start transfer");
+        telemetry.addLine("cross to stop all");
+
+    }
+}
 /**
  * This is the Drawing class. It handles the drawing of stuff on Panels Dashboard, like the robot.
  *

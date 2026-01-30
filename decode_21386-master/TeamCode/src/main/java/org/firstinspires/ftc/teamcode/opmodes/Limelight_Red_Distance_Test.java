@@ -18,12 +18,12 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.Limelight_Test;
+import org.firstinspires.ftc.teamcode.Limelight_Red_Distance_Test;
 
 import java.util.List;
 
 @TeleOp(name = "Limelight_Distance_Test")
-public class Limelight_Distance_Test extends LinearOpMode {
+public class Limelight_Red_Distance_Test extends LinearOpMode {
 
     // Drive motors
     private DcMotor RF, LF, RB, LB;
@@ -44,9 +44,9 @@ public class Limelight_Distance_Test extends LinearOpMode {
     // Auto-aim parameters
     private double minPower = 0.15;
     private double maxPower = 0.4;
-    private double tolerance = 1;
+    private double tolerance = .8;
     private double lastError = 0;
-    private double rotationOffset = 0; // slight offset to aim slightly left
+    private double rotationOffset = -1; // slight offset to aim slightly left
 
     // Shooter PIDF parameters
     private final double SHORT_P = 900, SHORT_I = 0.001, SHORT_D = 0, SHORT_F = 17.5;
@@ -54,7 +54,7 @@ public class Limelight_Distance_Test extends LinearOpMode {
 
     // Shooter target
     double targetVelocity = 0;
-    final double LONG_RANGE_VELOCITY  = 1575;
+    final double LONG_RANGE_VELOCITY  = 1700;
     final double SHORT_RANGE_VELOCITY = 1275;
     final double NOMINAL_VOLTAGE = 12.2;
     String shooterMode = "OFF";
@@ -65,7 +65,7 @@ public class Limelight_Distance_Test extends LinearOpMode {
     private static final double MIN_TA = 0.2;
     // Shooter safety limits
     private static final double MIN_SHOOTER_RPM = 1200;
-    private static final double MAX_SHOOTER_RPM = 1650;
+    private static final double MAX_SHOOTER_RPM = 2400;
 
 
     @Override
@@ -268,7 +268,7 @@ public class Limelight_Distance_Test extends LinearOpMode {
 
         FiducialResult targetTag = null;
         for (FiducialResult tag : tags) {
-            if (tag.getFiducialId() == 20) {
+            if (tag.getFiducialId() == 24) {
                 targetTag = tag;
                 break;
             }
@@ -304,7 +304,7 @@ public class Limelight_Distance_Test extends LinearOpMode {
 
     private double shooterVelocityFromDistance(double dist) {
         // === INITIAL FIT (TUNE THESE) ===
-        double slope = 3.2;   // RPM per inch
+        double slope = 4.18;   // RPM per inch
         double intercept = 1030;
 
         double rpm = slope * dist + intercept;

@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.LED;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,12 +17,11 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.Limelight_Hood_Test;
 
 import java.util.List;
 
-@TeleOp(name = "Limelight_Hood_Test")
-public class Limelight_Hood_Test extends LinearOpMode {
+@TeleOp(name = "Limelight_Distance_Test")
+public class Limelight_Blue_Distance_Test extends LinearOpMode {
 
     // Drive motors
     private DcMotor RF, LF, RB, LB;
@@ -44,9 +42,9 @@ public class Limelight_Hood_Test extends LinearOpMode {
     // Auto-aim parameters
     private double minPower = 0.15;
     private double maxPower = 0.4;
-    private double tolerance = 1;
+    private double tolerance = .8;
     private double lastError = 0;
-    private double rotationOffset = 0; // slight offset to aim slightly left
+    private double rotationOffset = -1; // slight offset to aim slightly left
 
     // Shooter PIDF parameters
     private final double SHORT_P = 900, SHORT_I = 0.001, SHORT_D = 0, SHORT_F = 17.5;
@@ -54,22 +52,18 @@ public class Limelight_Hood_Test extends LinearOpMode {
 
     // Shooter target
     double targetVelocity = 0;
-    final double LONG_RANGE_VELOCITY  = 1575;
+    final double LONG_RANGE_VELOCITY  = 1700;
     final double SHORT_RANGE_VELOCITY = 1275;
     final double NOMINAL_VOLTAGE = 12.2;
     String shooterMode = "OFF";
 
-    // ===== AUTO HOOD CONTROL =====
+    // ===== TA → DISTANCE (LOG REGRESSION) =====
     private double smoothedDistance = 0;
-
-    // TA validity
+    // Reject bad TA
     private static final double MIN_TA = 0.2;
-
-    // Hood limits (TUNE THESE)
-    private static final double HOOD_MIN = 0.05;  // closest shot
-    private static final double HOOD_MAX = 0.20;  // furthest shot
-
-
+    // Shooter safety limits
+    private static final double MIN_SHOOTER_RPM = 1200;
+    private static final double MAX_SHOOTER_RPM = 2400;
 
 
     @Override
@@ -140,9 +134,9 @@ public class Limelight_Hood_Test extends LinearOpMode {
             boolean autoTargetActive = false;
             if (gamepad1.left_trigger > 0.3) {
                 if (smoothedDistance > 0) {
-                    double hoodPos = hoodPositionFromDistance(smoothedDistance);
-                    hood.setPosition(hoodPos);
-                    shooterMode = "AUTO HOOD";
+                    targetVelocity = shooterVelocityFromDistance(smoothedDistance);
+                    shooter.setVelocity(targetVelocity);
+                    shooterMode = "AUTO (TA LOG)";
                 }
 
                 double rotationCorrection = getRotationCorrection();
@@ -196,7 +190,6 @@ public class Limelight_Hood_Test extends LinearOpMode {
             // ========== SHOOTER MODES ==========
             double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
             double voltageCompF = NOMINAL_VOLTAGE / voltage;
-
             LLResult result = limelight.getLatestResult();
             if (result != null && result.isValid()) {
                 double ta = result.getTa();
@@ -211,7 +204,6 @@ public class Limelight_Hood_Test extends LinearOpMode {
                 telemetry.addData("TA", "%.2f", ta);
                 telemetry.addData("Distance (in)", "%.1f", smoothedDistance);
             }
-
 
             if (gamepad2.dpad_up) {
                 targetVelocity = LONG_RANGE_VELOCITY;
@@ -264,6 +256,7 @@ public class Limelight_Hood_Test extends LinearOpMode {
     private double getDistanceFromAngle(double ta) {
         return 1.0;
     }
+
     private double getRotationCorrection() {
         LLResult result = limelight.getLatestResult();
         if (result == null || !result.isValid()) return 0;
@@ -278,7 +271,6 @@ public class Limelight_Hood_Test extends LinearOpMode {
                 break;
             }
         }
-
         if (targetTag == null) return 0;
 
         double error = result.getTx() + rotationOffset;
@@ -297,24 +289,27 @@ public class Limelight_Hood_Test extends LinearOpMode {
         lastError = error;
         return -rotationPower;
     }
+
     private double distanceFromTA(double ta) {
         if (ta <= MIN_TA) return -1;
 
-        // === DESMOS LOG REGRESSION ===
+        // === DESMOS LOG REGRESSION (DO NOT CHANGE FORM) ===
         double distance = 72.53435 - 37.74489 * Math.log(ta);
 
-        // Clamp realistic shooting distances (inches)
+        // Clamp to realistic field distances (inches)
         return Math.max(15, Math.min(130, distance));
     }
 
-    private double hoodPositionFromDistance(double dist) {
-        // Linear hood fit (START HERE)
-        double slope = 0.0012;   // servo units per inch
-        double intercept = 0.03;
+    private double shooterVelocityFromDistance(double dist) {
+        // === INITIAL FIT (TUNE THESE) ===
+        double slope = 4.18;   // RPM per inch
+        double intercept = 1030;
 
-        double pos = slope * dist + intercept;
+        double rpm = slope * dist + intercept;
 
-        return Math.max(HOOD_MIN, Math.min(HOOD_MAX, pos));
+        return Math.max(MIN_SHOOTER_RPM, Math.min(MAX_SHOOTER_RPM, rpm));
     }
+
+
 
 }

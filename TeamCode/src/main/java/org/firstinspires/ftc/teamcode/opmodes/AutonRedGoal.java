@@ -10,11 +10,13 @@ import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorControllerEx;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -43,7 +45,7 @@ public class AutonRedGoal extends OpMode {
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1150;
+    double targetVelocity = 1100;
     double increment = 75;
 
     final double NOMINAL_VOLTAGE = 12.0;
@@ -55,12 +57,15 @@ public class AutonRedGoal extends OpMode {
 
     double sp = 0.6;
 
+    DcMotorControllerEx motorControllerEx = (DcMotorControllerEx) shooter.getController();
+    int motorIndex = shooter.getPortNumber();
+
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
     private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
-    private final Pose PGPcollected = new Pose(142,34,Math.toRadians(6));
+    private final Pose PGPcollected = new Pose(138,34,Math.toRadians(6));
 
     private final Pose PGPPose = new Pose(90, 37, Math.toRadians(5)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
@@ -73,6 +78,52 @@ public class AutonRedGoal extends OpMode {
 
 
     private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
+
+    /** This method is called once at the init of the OpMode. **/
+    @Override
+    public void init() {
+        pathState = 0;
+        pathTimer = new Timer();
+        opmodeTimer = new Timer();
+        pathTimer.resetTimer();
+        opmodeTimer.resetTimer();
+        //cam = hardwareMap.get(Limelight3A.class, "limelight");
+
+        follower = Constants.createFollower(hardwareMap);
+        buildPaths();
+        follower.setStartingPose(startPose); //set the starting pose
+        follower.setMaxPower(1);
+
+        try {
+            shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
+            shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
+            intake = hardwareMap.get(DcMotor.class, "Intake");
+            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
+            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
+            telemetry.addData("Hardware", "Initialized Successfully");
+            //battery compensation
+            voltageSensor = hardwareMap.voltageSensor.iterator().next();
+            //limelight
+           // cam = hardwareMap.get(Limelight3A.class, "limelight");
+        } catch (Exception e) {
+            telemetry.addData("Hardware Error", e.getMessage());
+        }
+
+        telemetry.addData("Status", "Blue Goal Auto Initialized");
+        telemetry.addData("path state", pathState);
+        telemetry.addData("x", follower.getPose().getX());
+        telemetry.addData("y", follower.getPose().getY());
+        telemetry.addData("heading", follower.getPose().getHeading());
+        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
+
+        telemetry.update();
+
+        shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+        intake.setDirection(DcMotorSimple.Direction.FORWARD);
+    }
 
     private PathChain buildStraightPath(Pose start, Pose end) {
         return follower.pathBuilder()
@@ -142,20 +193,23 @@ public class AutonRedGoal extends OpMode {
     private double getVoltageCompensatedVelocity() {
         double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
         double voltageComp = NOMINAL_VOLTAGE / voltage;
-        return targetVelocity * voltageComp;
+        return voltageComp;
     }
+
 
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload,0.75, true);
+                follower.followPath(goToShootPreload, true);
                 setPathState(34);
                 break;
 
             case 34:
                 if(!follower.isBusy()) {
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-30);
+                    motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
+                            new PIDFCoefficients(900, 0, 0, 17.5));
+                    shooter.setVelocity(targetVelocity);
                     setPathState(20);
                 }
                 break;
@@ -169,7 +223,7 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 178:
                 if(pathTimer.getElapsedTimeSeconds()>0.00001){
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-40);
+                    shooter.setVelocity(targetVelocity);
                     intake.setPower(1);
                     setPathState(1);
                 }
@@ -213,7 +267,7 @@ public class AutonRedGoal extends OpMode {
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     intake.setPower(0);
                     follower.followPath(goToShoot1,true);
-                    shooter.setVelocity(getVoltageCompensatedVelocity());
+                    shooter.setVelocity(targetVelocity);
                     telemetry.addLine("Done shooting pickups");
                     pathTimer.resetTimer();
                     setPathState(492);
@@ -246,7 +300,7 @@ public class AutonRedGoal extends OpMode {
                 if(!follower.isBusy()) {
                     intake.setPower(1);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(collectArtifacts1,0.35,true);
+                    follower.followPath(collectArtifacts1,0.3,true);
                     telemetry.addLine("Done grabPickup3 path");
 
                     setPathState(6);
@@ -254,19 +308,19 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 6:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
-                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>2.5) {
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>0.5) {
                     /* Grab Sample */
                     intake.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                     follower.followPath(goToShoot2, true);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()+40);
+                    shooter.setVelocity(targetVelocity);
                     telemetry.addLine("Done scorePickup3 path");
 
                     setPathState(40);
                 }
                 break;
             case 40:
-                if(pathTimer.getElapsedTimeSeconds()>shooterLoading+0.5){
+                if(pathTimer.getElapsedTimeSeconds()>shooterLoading+0.25){
                     intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);
@@ -301,49 +355,6 @@ public class AutonRedGoal extends OpMode {
     }
 
 
-
-
-    /** This method is called once at the init of the OpMode. **/
-    @Override
-    public void init() {
-        pathState = 0;
-        pathTimer = new Timer();
-        opmodeTimer = new Timer();
-        pathTimer.resetTimer();
-        opmodeTimer.resetTimer();
-        //cam = hardwareMap.get(Limelight3A.class, "limelight");
-
-        follower = Constants.createFollower(hardwareMap);
-        buildPaths();
-        follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(1);
-
-        try {
-            shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
-            shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            intake = hardwareMap.get(DcMotor.class, "Intake");
-            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
-            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
-            telemetry.addData("Hardware", "Initialized Successfully");
-            //battery compensation
-            voltageSensor = hardwareMap.voltageSensor.iterator().next();
-        } catch (Exception e) {
-            telemetry.addData("Hardware Error", e.getMessage());
-        }
-
-        telemetry.addData("Status", "Blue Goal Auto Initialized");
-        telemetry.addData("path state", pathState);
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("Heading", "%.1f°", Math.toDegrees(follower.getPose().getHeading()));
-
-        telemetry.update();
-
-        shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-        intake.setDirection(DcMotorSimple.Direction.FORWARD);
-    }
 
     /** This method is called continuously after Init while waiting for "play". **/
     @Override
@@ -409,7 +420,6 @@ public class AutonRedGoal extends OpMode {
         telemetry.addData("Time", "%.1f sec", opmodeTimer.getElapsedTimeSeconds());
         telemetry.addData("Path Timer", "%.1f sec", pathTimer.getElapsedTimeSeconds());
         telemetry.addData("Shooter Power", shooter.getPower());
-        ShooterSpeed();
         telemetry.update();
     }
 
@@ -422,12 +432,6 @@ public class AutonRedGoal extends OpMode {
 
         telemetry.addData("Status", "Blue Goal Auto Complete");
         telemetry.addData("Final Time", "%.2f seconds", opmodeTimer.getElapsedTimeSeconds());
-        telemetry.update();
-    }
-    private void ShooterSpeed() {
-        double currentVelocity = shooter.getVelocity();
-        double targetVelocity = getVoltageCompensatedVelocity();
-        telemetry.addData("Shooter Speed: ", (Math.abs(currentVelocity - targetVelocity)));
         telemetry.update();
     }
 }

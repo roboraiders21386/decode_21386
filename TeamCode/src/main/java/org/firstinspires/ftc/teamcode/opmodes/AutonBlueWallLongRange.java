@@ -1,6 +1,7 @@
 //locked - dont change at all
 package org.firstinspires.ftc.teamcode.opmodes;
-
+import com.qualcomm.robotcore.hardware.DcMotorControllerEx;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -13,7 +14,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -31,12 +34,62 @@ public class AutonBlueWallLongRange extends OpMode {
     private Servo hood;
 
     // Shooter settings
-    private final double LONG_RANGE_VELOCITY = 1550;
+    private final double LONG_RANGE_VELOCITY = 1470;
     private final double NOMINAL_VOLTAGE = 12.0;
+
+    private DcMotorControllerEx motorControllerEx;
+    private int motorIndex;
+
+
+
 
 
     private PathChain goToShootPreload, goToIntake, collectArtifacts, goToShoot1, goToPickupHP, collectArtifactsHP, goToShootHP,endAuto;
 
+
+
+    @Override
+    public void init() {
+        pathTimer = new Timer();
+        opmodeTimer = new Timer();
+        actionTimer = new Timer();
+        opmodeTimer.resetTimer();
+
+        // Initialize Pedro Pathing
+        follower = Constants.createFollower(hardwareMap);
+        buildPaths();
+        follower.setStartingPose(new Pose(56.000, 8.000, Math.toRadians(270)));
+        follower.setMaxPower(0.75);
+        pathState = 0;
+
+
+
+        // Initialize hardware
+        try {
+            shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
+
+            shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+
+            motorControllerEx = (DcMotorControllerEx) shooter.getController();
+            motorIndex = shooter.getPortNumber();
+
+            intake = hardwareMap.get(DcMotor.class, "Intake");
+            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
+            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
+            hood = hardwareMap.get(Servo.class, "hood");
+
+            telemetry.addData("Hardware", "Initialized Successfully");
+        } catch (Exception e) {
+            telemetry.addData("Hardware Error", e.getMessage());
+        }
+
+        telemetry.addData("Status", "Red Wall Long Range Auto Initialized");
+        telemetry.addData("Mode", "LONG RANGE");
+        telemetry.addData("Target Velocity", LONG_RANGE_VELOCITY);
+        telemetry.update();
+    }
 
 
     public void buildPaths() {
@@ -100,7 +153,9 @@ public class AutonBlueWallLongRange extends OpMode {
                 if (!follower.isBusy()) {
                     // At shooting position - spin up shooter
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-40);
+                    motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
+                            new PIDFCoefficients(2400, 0, 0, 17.5));
+                    shooter.setVelocity(LONG_RANGE_VELOCITY);
                     actionTimer.resetTimer();
                     setPathState(2);
                 }
@@ -275,43 +330,6 @@ public class AutonBlueWallLongRange extends OpMode {
         pathTimer.resetTimer();
     }
 
-    @Override
-    public void init() {
-        pathTimer = new Timer();
-        opmodeTimer = new Timer();
-        actionTimer = new Timer();
-        opmodeTimer.resetTimer();
-
-        // Initialize Pedro Pathing
-        follower = Constants.createFollower(hardwareMap);
-        buildPaths();
-        follower.setStartingPose(new Pose(56.000, 8.000, Math.toRadians(270)));
-        follower.setMaxPower(0.75);
-        pathState = 0;
-
-
-        // Initialize hardware
-        try {
-            shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
-            shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-
-            intake = hardwareMap.get(DcMotor.class, "Intake");
-            left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
-            right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
-            hood = hardwareMap.get(Servo.class, "hood");
-
-            telemetry.addData("Hardware", "Initialized Successfully");
-        } catch (Exception e) {
-            telemetry.addData("Hardware Error", e.getMessage());
-        }
-
-        telemetry.addData("Status", "Red Wall Long Range Auto Initialized");
-        telemetry.addData("Mode", "LONG RANGE");
-        telemetry.addData("Target Velocity", LONG_RANGE_VELOCITY);
-        telemetry.update();
-    }
 
     /** This method is called continuously after Init while waiting for "play". **/
     @Override

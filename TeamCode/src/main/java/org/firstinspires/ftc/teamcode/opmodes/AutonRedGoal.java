@@ -37,7 +37,7 @@ public class AutonRedGoal extends OpMode {
     private CRServo right_Transfer;
 
     // ==================== CONSTANTS - TIMING ====================
-    private static final double shooterLoading = 3; // seconds for shooter to reach full speed this is essential
+    private static final double shooterLoading = 1.5; // seconds for shooter to reach full speed this is essential
     private static final double shooterDuration = 4; // seconds to shoot 3 artifacts
     private static final double intakeDuration = 1; // seconds to intake a sample
     private static final double auto = 30; // total autonomous time limit
@@ -58,8 +58,8 @@ public class AutonRedGoal extends OpMode {
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
-    private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(6)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(134,65,Math.toRadians(6));
+    private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
     private final Pose PGPcollected = new Pose(142,34,Math.toRadians(6));
 
     private final Pose PGPPose = new Pose(90, 37, Math.toRadians(5)); // Middle (Second Set) of Artifacts from the Spike Mark.
@@ -148,14 +148,14 @@ public class AutonRedGoal extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload,0.5, true);
+                follower.followPath(goToShootPreload,0.75, true);
                 setPathState(34);
                 break;
 
             case 34:
                 if(!follower.isBusy()) {
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setVelocity(getVoltageCompensatedVelocity());
+                    shooter.setVelocity(getVoltageCompensatedVelocity()-30);
                     setPathState(20);
                 }
                 break;
@@ -169,7 +169,7 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 178:
                 if(pathTimer.getElapsedTimeSeconds()>0.00001){
-                    shooter.setVelocity(getVoltageCompensatedVelocity()+20);
+                    shooter.setVelocity(getVoltageCompensatedVelocity()-40);
                     intake.setPower(1);
                     setPathState(1);
                 }
@@ -184,6 +184,7 @@ public class AutonRedGoal extends OpMode {
 
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds()>shooterDuration) {
+                    intake.setPower(0);
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
@@ -198,6 +199,7 @@ public class AutonRedGoal extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>intakeDuration) {
                     /* Grab artifacts */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                    intake.setPower(1);
                     follower.followPath(collectArtifacts,0.245,true);
                     telemetry.addLine("Done collecting artifacts");
                     pathTimer.resetTimer();
@@ -206,9 +208,10 @@ public class AutonRedGoal extends OpMode {
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>0.5) {
+                if(!follower.isBusy()) {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
+                    intake.setPower(0);
                     follower.followPath(goToShoot1,true);
                     shooter.setVelocity(getVoltageCompensatedVelocity());
                     telemetry.addLine("Done shooting pickups");
@@ -217,7 +220,7 @@ public class AutonRedGoal extends OpMode {
                 }
                 break;
             case 492:
-                if(!follower.isBusy()){
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>shooterLoading){
                     intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);
@@ -229,6 +232,7 @@ public class AutonRedGoal extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
                 if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>shooterDuration) {
                     /* Grab Sample */
+                    intake.setPower(0);
                     left_Transfer.setPower(0);
                     right_Transfer.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
@@ -240,27 +244,29 @@ public class AutonRedGoal extends OpMode {
             case 5:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
+                    intake.setPower(1);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
                     follower.followPath(collectArtifacts1,0.35,true);
                     telemetry.addLine("Done grabPickup3 path");
 
-                    setPathState(94);
+                    setPathState(6);
                 }
                 break;
             case 6:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
-                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>4) {
+                if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>2.5) {
                     /* Grab Sample */
-
+                    intake.setPower(0);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                     follower.followPath(goToShoot2, true);
+                    shooter.setVelocity(getVoltageCompensatedVelocity()+40);
                     telemetry.addLine("Done scorePickup3 path");
 
                     setPathState(40);
                 }
                 break;
             case 40:
-                if(pathTimer.getElapsedTimeSeconds()>intakeDuration){
+                if(pathTimer.getElapsedTimeSeconds()>shooterLoading+0.5){
                     intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);
@@ -310,7 +316,7 @@ public class AutonRedGoal extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose); //set the starting pose
-        follower.setMaxPower(0.65);
+        follower.setMaxPower(1);
 
         try {
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");

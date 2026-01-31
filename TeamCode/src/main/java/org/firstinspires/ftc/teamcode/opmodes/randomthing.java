@@ -58,7 +58,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.List;
 
-@TeleOp(name = "velocity comp teleop test", group = "TeleOp")
+@TeleOp(name = "velocity comp teleop test", group = "Testing")
 public class randomthing extends OpMode {
 
     // hardware

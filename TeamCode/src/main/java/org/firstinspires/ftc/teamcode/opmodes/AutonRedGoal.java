@@ -57,22 +57,22 @@ public class AutonRedGoal extends OpMode {
 
     double sp = 0.6;
 
-    DcMotorControllerEx motorControllerEx = (DcMotorControllerEx) shooter.getController();
-    int motorIndex = shooter.getPortNumber();
+    private DcMotorControllerEx motorControllerEx;
+    private int motorIndex;
 
 
     private static final Pose startPose = new Pose(120, 132, Math.toRadians(225)); // Start Pose of our robot.
     // Initialize poses
     private static final Pose PPGPose = new Pose(90, 65, Math.toRadians(0)); // Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose PPGcollected = new Pose(130,65,Math.toRadians(0));
-    private final Pose PGPcollected = new Pose(138,34,Math.toRadians(6));
+    private final Pose PPGcollected = new Pose(135,65,Math.toRadians(0));
+    private final Pose PGPcollected = new Pose(140,34,Math.toRadians(6));
 
     private final Pose PGPPose = new Pose(90, 37, Math.toRadians(5)); // Middle (Second Set) of Artifacts from the Spike Mark.
     //private final Pose GPPPose = new Pose(60, 35.5, Math.toRadians(160)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private static final Pose scorePose = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose scorePose2 = new Pose(80, 87, Math.toRadians(220)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose scorePose3 = new Pose(80, 87, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose scorePose3 = new Pose(80, 95, Math.toRadians(225)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
     private final Pose endPose = new Pose(100, 45, Math.toRadians(10)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
 
@@ -99,6 +99,8 @@ public class AutonRedGoal extends OpMode {
             shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+            motorControllerEx = (DcMotorControllerEx) shooter.getController();
+            motorIndex = shooter.getPortNumber();
 
             intake = hardwareMap.get(DcMotor.class, "Intake");
             left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
@@ -200,7 +202,7 @@ public class AutonRedGoal extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(goToShootPreload, true);
+                follower.followPath(goToShootPreload,0.75, true);
                 setPathState(34);
                 break;
 
@@ -320,7 +322,7 @@ public class AutonRedGoal extends OpMode {
                 }
                 break;
             case 40:
-                if(pathTimer.getElapsedTimeSeconds()>shooterLoading+0.25){
+                if(pathTimer.getElapsedTimeSeconds()>shooterLoading+0.5){
                     intake.setPower(1);
                     left_Transfer.setPower(1);
                     right_Transfer.setPower(-1);

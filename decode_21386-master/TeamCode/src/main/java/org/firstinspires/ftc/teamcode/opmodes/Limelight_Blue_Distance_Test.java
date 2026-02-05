@@ -54,7 +54,7 @@ public class Limelight_Blue_Distance_Test extends LinearOpMode {
     double targetVelocity = 0;
     final double LONG_RANGE_VELOCITY  = 1700;
     final double SHORT_RANGE_VELOCITY = 1275;
-    final double NOMINAL_VOLTAGE = 12.2;
+    final double NOMINAL_VOLTAGE = 11.8;
     String shooterMode = "OFF";
 
     // ===== TA → DISTANCE (LOG REGRESSION) =====
@@ -134,6 +134,7 @@ public class Limelight_Blue_Distance_Test extends LinearOpMode {
             boolean autoTargetActive = false;
             if (gamepad1.left_trigger > 0.3) {
                 if (smoothedDistance > 0) {
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
                     targetVelocity = shooterVelocityFromDistance(smoothedDistance);
                     shooter.setVelocity(targetVelocity);
                     shooterMode = "AUTO (TA LOG)";
@@ -273,7 +274,7 @@ public class Limelight_Blue_Distance_Test extends LinearOpMode {
         }
         if (targetTag == null) return 0;
 
-        double error = result.getTx() + rotationOffset;
+        double error = result.getTx()*-1 + rotationOffset;
 
         // Dynamic proportional gain: slower near center
         double kP = Math.abs(error) > 15 ? 0.035 : 0.025;
@@ -302,7 +303,7 @@ public class Limelight_Blue_Distance_Test extends LinearOpMode {
 
     private double shooterVelocityFromDistance(double dist) {
         // === INITIAL FIT (TUNE THESE) ===
-        double slope = 4.18;   // RPM per inch
+        double slope = 3.8;   // RPM per inch
         double intercept = 1030;
 
         double rpm = slope * dist + intercept;

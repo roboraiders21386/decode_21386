@@ -56,7 +56,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     double targetVelocity = 0;
     final double LONG_RANGE_VELOCITY  = 1700;
     final double SHORT_RANGE_VELOCITY = 1275;
-    final double NOMINAL_VOLTAGE = 12.2;
+    final double NOMINAL_VOLTAGE = 11.8;
     String shooterMode = "OFF";
 
     // ===== TA → DISTANCE (LOG REGRESSION) =====
@@ -136,6 +136,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
             boolean autoTargetActive = false;
             if (gamepad1.left_trigger > 0.3) {
                 if (smoothedDistance > 0) {
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
                     targetVelocity = shooterVelocityFromDistance(smoothedDistance);
                     shooter.setVelocity(targetVelocity);
                     shooterMode = "AUTO (TA LOG)";
@@ -170,7 +171,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
             // ========== TRANSFER / CLEARING ==========
             if (gamepad2.triangle) {
                 left_Transfer.setPower(1);
-                right_Transfer.setPower(-1);
+                right_Transfer.setPower(1);
             } else if (gamepad2.cross) {
                 left_Transfer.setPower(0);
                 right_Transfer.setPower(0);
@@ -179,7 +180,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 shooterMode = "OFF";
             } else if (gamepad2.circle) {
                 left_Transfer.setPower(-1);
-                right_Transfer.setPower(1);
+                right_Transfer.setPower(-1);
                 shooter.setDirection(DcMotorSimple.Direction.REVERSE);
                 shooter.setVelocity(1200);
                 intake.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -191,7 +192,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
 
             // ========== SHOOTER MODES ==========
             double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
-            double voltageCompF = NOMINAL_VOLTAGE / voltage;
+            double voltageCompF = (NOMINAL_VOLTAGE / voltage);
             LLResult result = limelight.getLatestResult();
             if (result != null && result.isValid()) {
                 double ta = result.getTa();
@@ -275,7 +276,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
         }
         if (targetTag == null) return 0;
 
-        double error = result.getTx() + rotationOffset;
+        double error = result.getTx()* -1 + rotationOffset;
 
         // Dynamic proportional gain: slower near center
         double kP = Math.abs(error) > 15 ? 0.035 : 0.025;
@@ -304,7 +305,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
 
     private double shooterVelocityFromDistance(double dist) {
         // === INITIAL FIT (TUNE THESE) ===
-        double slope = 4.18;   // RPM per inch
+        double slope = 3.8;   // RPM per inch
         double intercept = 1030;
 
         double rpm = slope * dist + intercept;

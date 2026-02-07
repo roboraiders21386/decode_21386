@@ -104,12 +104,12 @@ public class AutonBlueWallLongRange extends OpMode {
                 .build();
 
         collectArtifacts = follower.pathBuilder()
-                .addPath(new BezierCurve(new Pose(41.177, 48), new Pose(5, 48))) //bezier line before
+                .addPath(new BezierCurve(new Pose(41.177, 48), new Pose(3, 48))) //bezier line before
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(175))
                 .build();
 
         goToShoot1 = follower.pathBuilder()
-                .addPath(new BezierLine(new Pose(9, 48), new Pose(55, 24)))
+                .addPath(new BezierLine(new Pose(3, 48), new Pose(55, 24)))
                 .setLinearHeadingInterpolation(Math.toRadians(185), Math.toRadians(297))
                 .build();
 
@@ -210,8 +210,8 @@ public class AutonBlueWallLongRange extends OpMode {
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds()>1) {
                     // Path 4: Return to shooting position
                     intake.setPower(0);
-                    follower.followPath(goToShoot1, 0.5,true);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-90);
+                    follower.followPath(goToShoot1, 0.65,true);
+                    shooter.setVelocity(LONG_RANGE_VELOCITY);
                     setPathState(6);
                 }
                 break;

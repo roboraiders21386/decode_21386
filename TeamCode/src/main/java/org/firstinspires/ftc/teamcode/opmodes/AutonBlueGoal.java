@@ -44,10 +44,10 @@ public class AutonBlueGoal extends OpMode {
     private static final double auto = 30; // total autonomous time limit
 
     // shooter velocity target (ticks/sec)
-    double targetVelocity = 1100;
+    double targetVelocity = 1150;
     double increment = 75;
 
-    final double NOMINAL_VOLTAGE = 12.0;
+    final double NOMINAL_VOLTAGE = 13.0;
     double compensated;
     private VoltageSensor voltageSensor;
 
@@ -74,9 +74,9 @@ public class AutonBlueGoal extends OpMode {
     private final Pose PGPPose = new Pose(55, 56, Math.toRadians(180)); // Middle (Second Set) of Artifacts from the Spike Mark.
 
     private final Pose scorePose = new Pose(65, 85, Math.toRadians(315)); // Scoring Pose of our robot. It is facing the goal at a 315 degree angle.
-    private final Pose scorePose2 = new Pose(61, 87, Math.toRadians(320)); // Scoring Pose of our robot. It is facing the goal at a 320 degree angle.
-    private final Pose scorePose3 = new Pose(64, 86, Math.toRadians(325)); // Scoring Pose of our robot. It is facing the goal at a 315 degree angle.
-    private final Pose endPose = new Pose(48, 60, Math.toRadians(160)); // Ending Pose of our robot. It is facing the wall at a 160 degree angle
+    private final Pose scorePose2 = new Pose(61, 87, Math.toRadians(325)); // Scoring Pose of our robot. It is facing the goal at a 320 degree angle.
+    private final Pose scorePose3 = new Pose(60, 91, Math.toRadians(325)); // Scoring Pose of our robot. It is facing the goal at a 315 degree angle.
+    private final Pose endPose = new Pose(50, 120, Math.toRadians(325)); // Ending Pose of our robot. It is facing the wall at a 160 degree angle
 
 
     private PathChain goToShootPreload, goToIntake, collectArtifacts,goToShoot1, goToIntake1, collectArtifacts1, goToShoot2, endAuto;
@@ -253,8 +253,8 @@ public class AutonBlueGoal extends OpMode {
                 if(!follower.isBusy()&&pathTimer.getElapsedTimeSeconds()>3) {
                     /* Score artifact */
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are grabbing the sample */
-                    follower.followPath(goToShoot1,true);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-30);
+                    follower.followPath(goToShoot1,0.75,true);
+                    shooter.setVelocity(targetVelocity);
                     telemetry.addLine("Done shooting pickups");
                     pathTimer.resetTimer();
                     setPathState(492);
@@ -298,7 +298,8 @@ public class AutonBlueGoal extends OpMode {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(goToShoot2, true);
+                    follower.followPath(goToShoot2,0.75, true);
+                    shooter.setVelocity(targetVelocity-10);
                     telemetry.addLine("Done scorePickup3 path");
 
                     setPathState(40);

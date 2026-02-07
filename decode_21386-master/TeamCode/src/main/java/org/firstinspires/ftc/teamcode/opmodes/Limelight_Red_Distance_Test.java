@@ -44,7 +44,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     // Auto-aim parameters
     private double minPower = 0.15;
     private double maxPower = 0.4;
-    private double tolerance = .8;
+    private double tolerance = .1;
     private double lastError = 0;
     private double rotationOffset = -1; // slight offset to aim slightly left
 
@@ -64,7 +64,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     // Reject bad TA
     private static final double MIN_TA = 0.2;
     // Shooter safety limits
-    private static final double MIN_SHOOTER_RPM = 1200;
+    private static final double MIN_SHOOTER_RPM = 1150;
     private static final double MAX_SHOOTER_RPM = 2400;
 
 
@@ -135,12 +135,19 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
 
             boolean autoTargetActive = false;
             if (gamepad1.left_trigger > 0.3) {
-                if (smoothedDistance > 0) {
+                if (smoothedDistance > 90) {
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    targetVelocity = shooterVelocityFromDistance(smoothedDistance);
+                    targetVelocity = longShooterVelocityFromDistance(smoothedDistance);
                     shooter.setVelocity(targetVelocity);
                     shooterMode = "AUTO (TA LOG)";
                 }
+                else if (smoothedDistance > 0) {
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    targetVelocity = shortShooterVelocityFromDistance(smoothedDistance);
+                    shooter.setVelocity(targetVelocity);
+                    shooterMode = "AUTO (TA LOG)";
+                }
+
 
                 double rotationCorrection = getRotationCorrection();
                 if (rotationCorrection != 0) {
@@ -171,7 +178,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
             // ========== TRANSFER / CLEARING ==========
             if (gamepad2.triangle) {
                 left_Transfer.setPower(1);
-                right_Transfer.setPower(1);
+                right_Transfer.setPower(-1);
             } else if (gamepad2.cross) {
                 left_Transfer.setPower(0);
                 right_Transfer.setPower(0);
@@ -214,7 +221,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 sleep(150);
                 hood.setPosition(.15);
                 motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
-                        new PIDFCoefficients(LONG_P, LONG_I, LONG_D, LONG_F * voltageCompF));
+                        new PIDFCoefficients(LONG_P, LONG_I, LONG_D, LONG_F ));
             }
 
             if (gamepad2.dpad_down) {
@@ -223,7 +230,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 sleep(150);
                 hood.setPosition(.06);
                 motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
-                        new PIDFCoefficients(SHORT_P, SHORT_I, SHORT_D, SHORT_F * voltageCompF));
+                        new PIDFCoefficients(SHORT_P, SHORT_I, SHORT_D, SHORT_F ));
             }
 
             // Run shooter
@@ -303,9 +310,18 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
         return Math.max(15, Math.min(130, distance));
     }
 
-    private double shooterVelocityFromDistance(double dist) {
+    private double longShooterVelocityFromDistance(double dist) {
         // === INITIAL FIT (TUNE THESE) ===
-        double slope = 3.8;   // RPM per inch
+        double slope = 4.18;   // RPM per inch
+        double intercept = 1030;
+
+        double rpm = (dist>106)? 1.4*slope * dist + intercept:slope * dist + intercept;
+
+        return Math.max(MIN_SHOOTER_RPM, Math.min(MAX_SHOOTER_RPM, rpm));
+    }
+    private double shortShooterVelocityFromDistance(double dist) {
+        // === INITIAL FIT (TUNE THESE) ===
+        double slope = 3.9;   // RPM per inch
         double intercept = 1030;
 
         double rpm = slope * dist + intercept;

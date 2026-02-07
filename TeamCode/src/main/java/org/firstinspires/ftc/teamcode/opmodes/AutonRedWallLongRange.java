@@ -33,8 +33,8 @@ public class AutonRedWallLongRange extends OpMode {
     private DcMotorControllerEx motorControllerEx;
     private int motorIndex;
     // Paths
-    private final Pose startPose = new Pose(87.652, 8, Math.toRadians(270)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(88, 26, Math.toRadians(247)); // Score Pose of our robot.
+    private final Pose startPose = new Pose(87.652, 8, Math.toRadians(270)); // Start Pose of our robot. switched
+    private final Pose scorePose = new Pose(88, 26, Math.toRadians(247)); // Score Pose of our robot. switched
     private Path goToShootPreload;
     private PathChain goToIntake, collectArtifacts, goToShoot1, goToPickupHP, collectArtifactsHP, goToShootHP,endAuto;
 
@@ -47,7 +47,7 @@ public class AutonRedWallLongRange extends OpMode {
         // Initialize Pedro Pathing
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
-        follower.setStartingPose(new Pose(56.000, 8.000, Math.toRadians(270)));
+        follower.setStartingPose(new Pose(87.652, 8.000, Math.toRadians(270)));
         follower.setMaxPower(0.75);
         pathState = 0;
 
@@ -55,6 +55,7 @@ public class AutonRedWallLongRange extends OpMode {
 
         // Initialize hardware
         try {
+            hood = hardwareMap.get(Servo.class, "hood");
             shooter = hardwareMap.get(DcMotorEx.class, "Shooter");
 
             shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -67,7 +68,6 @@ public class AutonRedWallLongRange extends OpMode {
             intake = hardwareMap.get(DcMotor.class, "Intake");
             left_Transfer = hardwareMap.get(CRServo.class, "Left Transfer");
             right_Transfer = hardwareMap.get(CRServo.class, "Right Transfer");
-            hood = hardwareMap.get(Servo.class, "hood");
 
             telemetry.addData("Hardware", "Initialized Successfully");
         } catch (Exception e) {
@@ -182,7 +182,7 @@ public class AutonRedWallLongRange extends OpMode {
                 if (!follower.isBusy()) {
                     // At shooting position - spin up shooter again
                     shooter.setDirection(DcMotorSimple.Direction.FORWARD);
-                    shooter.setVelocity(getVoltageCompensatedVelocity()-100);
+                    shooter.setVelocity(LONG_RANGE_VELOCITY);
                     pathTimer.resetTimer();
                     setPathState(7);
                 }

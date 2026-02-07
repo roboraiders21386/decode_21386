@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opmodes;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -18,6 +18,7 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.Limelight_Red_Distance_Test;
 
 import java.util.List;
 
@@ -43,9 +44,9 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     // Auto-aim parameters
     private double minPower = 0.15;
     private double maxPower = 0.4;
-    private double tolerance = .8;
+    private double tolerance = .1;
     private double lastError = 0;
-    private double rotationOffset = 0; // slight offset to aim slightly left
+    private double rotationOffset = -1; // slight offset to aim slightly left
 
     // Shooter PIDF parameters
     private final double SHORT_P = 900, SHORT_I = 0.001, SHORT_D = 0, SHORT_F = 17.5;
@@ -55,7 +56,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     double targetVelocity = 0;
     final double LONG_RANGE_VELOCITY  = 1700;
     final double SHORT_RANGE_VELOCITY = 1275;
-    final double NOMINAL_VOLTAGE = 12.2;
+    final double NOMINAL_VOLTAGE = 11.8;
     String shooterMode = "OFF";
 
     // ===== TA → DISTANCE (LOG REGRESSION) =====
@@ -63,7 +64,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
     // Reject bad TA
     private static final double MIN_TA = 0.2;
     // Shooter safety limits
-    private static final double MIN_SHOOTER_RPM = 1200;
+    private static final double MIN_SHOOTER_RPM = 1150;
     private static final double MAX_SHOOTER_RPM = 2400;
 
 
@@ -134,11 +135,19 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
 
             boolean autoTargetActive = false;
             if (gamepad1.left_trigger > 0.3) {
-                if (smoothedDistance > 0) {
-                    targetVelocity = shooterVelocityFromDistance(smoothedDistance);
+                if (smoothedDistance > 90) {
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    targetVelocity = longShooterVelocityFromDistance(smoothedDistance);
                     shooter.setVelocity(targetVelocity);
                     shooterMode = "AUTO (TA LOG)";
                 }
+                else if (smoothedDistance > 0) {
+                    shooter.setDirection(DcMotorSimple.Direction.FORWARD);
+                    targetVelocity = shortShooterVelocityFromDistance(smoothedDistance);
+                    shooter.setVelocity(targetVelocity);
+                    shooterMode = "AUTO (TA LOG)";
+                }
+
 
                 double rotationCorrection = getRotationCorrection();
                 if (rotationCorrection != 0) {
@@ -178,7 +187,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 shooterMode = "OFF";
             } else if (gamepad2.circle) {
                 left_Transfer.setPower(-1);
-                right_Transfer.setPower(1);
+                right_Transfer.setPower(-1);
                 shooter.setDirection(DcMotorSimple.Direction.REVERSE);
                 shooter.setVelocity(1200);
                 intake.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -190,7 +199,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
 
             // ========== SHOOTER MODES ==========
             double voltage = hardwareMap.voltageSensor.iterator().next().getVoltage();
-            double voltageCompF = NOMINAL_VOLTAGE / voltage;
+            double voltageCompF = (NOMINAL_VOLTAGE / voltage);
             LLResult result = limelight.getLatestResult();
             if (result != null && result.isValid()) {
                 double ta = result.getTa();
@@ -212,7 +221,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 sleep(150);
                 hood.setPosition(.15);
                 motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
-                        new PIDFCoefficients(LONG_P, LONG_I, LONG_D, LONG_F * voltageCompF));
+                        new PIDFCoefficients(LONG_P, LONG_I, LONG_D, LONG_F ));
             }
 
             if (gamepad2.dpad_down) {
@@ -221,7 +230,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
                 sleep(150);
                 hood.setPosition(.06);
                 motorControllerEx.setPIDFCoefficients(motorIndex, DcMotor.RunMode.RUN_USING_ENCODER,
-                        new PIDFCoefficients(SHORT_P, SHORT_I, SHORT_D, SHORT_F * voltageCompF));
+                        new PIDFCoefficients(SHORT_P, SHORT_I, SHORT_D, SHORT_F ));
             }
 
             // Run shooter
@@ -274,7 +283,7 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
         }
         if (targetTag == null) return 0;
 
-        double error = result.getTx()*-1 + rotationOffset;
+        double error = result.getTx()* -1 + rotationOffset;
 
         // Dynamic proportional gain: slower near center
         double kP = Math.abs(error) > 15 ? 0.035 : 0.025;
@@ -301,7 +310,16 @@ public class Limelight_Red_Distance_Test extends LinearOpMode {
         return Math.max(15, Math.min(130, distance));
     }
 
-    private double shooterVelocityFromDistance(double dist) {
+    private double longShooterVelocityFromDistance(double dist) {
+        // === INITIAL FIT (TUNE THESE) ===
+        double slope = 4.18;   // RPM per inch
+        double intercept = 1030;
+
+        double rpm = (dist>106)? 1.4*slope * dist + intercept:slope * dist + intercept;
+
+        return Math.max(MIN_SHOOTER_RPM, Math.min(MAX_SHOOTER_RPM, rpm));
+    }
+    private double shortShooterVelocityFromDistance(double dist) {
         // === INITIAL FIT (TUNE THESE) ===
         double slope = 3.9;   // RPM per inch
         double intercept = 1030;
